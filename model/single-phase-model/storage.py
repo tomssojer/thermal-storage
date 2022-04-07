@@ -1,13 +1,12 @@
 ##### Main python file for simulations #####
 
+from h11 import Data
 import numpy as np
 import os
 from package import export, initialize, mapping
 from arrays import ChargingArray, StoringArray, DischargingArray
 from properties import *
 from pandas import DataFrame
-import time
-from multiprocessing import Pool
 
 rootDir = os.getcwd()
 logDir = os.path.join(rootDir, r'logs')
@@ -18,7 +17,7 @@ exportable = export.Export(export.getFileName(logDir))
 
 class Storage:
 
-    # Methods look like this:
+    # Methods follow this pattern:
     # 1. Initialize temperatures by using starting temperatures or mapping
     #    from the previous process
     # 2. Prepare an empty list for temperatures to put in
@@ -34,34 +33,44 @@ class Storage:
 
         ##### Initialize temperatures #####
         previousTempList = initialize.temperatures(zNodes, rNodes, ambientTemp)
+        print(previousTempList)
         currentTempList = []  
 
-        exportable.initialTemperatures(previousTempList)   
+        # exportable.initialTemperatures(previousTempList)   
 
         ##### Call functions #####
         coefficients, constants = initialize.prepareCharging(zNodes)
         coeffMatrix = ChargingArray(coefficients, constants).coeffMatrix()
 
         # Calculate temperatures for every time step
-        start = time.time()
-        for timeStep in range(10):
-            def calcList():
-                for array in previousTempList:
-                    constArray = ChargingArray(coefficients, constants).constArray(array)
-                    temperature = np.linalg.solve(coeffMatrix, constArray)
-                    temperature = temperature.tolist()
-                    currentTempList.append(temperature)
+        for timeStep in range(10000):
+            for array in previousTempList:
+                constArray = ChargingArray(coefficients, constants).constArray(array)
+                temperature = np.linalg.solve(coeffMatrix, constArray)
+                temperature = temperature.tolist()
+                currentTempList.append(temperature)
 
-                # Export the array of arrays
-                keepCount = export.Count.time(dt)
-                exportable.allTemperatures("Charging", currentTempList, keepCount)
-                # Assign new temperatures as previous, empty out the current temperature array
-                previousTempList = list(currentTempList)
-                currentTempList = []
+            # Export the array of arrays
+            keepCount = export.Count.time(dt)
+            exportable.allTemperatures("Charging", currentTempList, keepCount)
+            # Assign new temperatures as previous, empty out the current temperature array
+            if timeStep % 100 == 0:
+                print(DataFrame(currentTempList))
+            previousTempList = list(currentTempList)
+            currentTempList = []
+        for timeStep in range(1000):
+            constArray = ChargingArray(
+                coefficients, constants).constArray(previousTempList[0])
             
-            
-        end = time.time()
-        print(end-start)
+            temperature = np.linalg.solve(coeffMatrix, constArray)
+            temperature = temperature.tolist()
+            currentTempList.append(temperature)
+
+            keepCount = export.Count.time(dt)
+            exportable.allTemperatures("Charging", currentTempList, keepCount)
+            # Assign new temperatures as previous, empty out the current temperature array
+            previousTempList = list(currentTempList)
+            currentTempList = []
 
         return previousTempList
 
@@ -86,16 +95,15 @@ class Storage:
                 temperature = temperature.tolist()
                 currentTempList.append(temperature)
 
-            ##### Export every time step #####
+            # Export every time step 
             keepCount = export.Count.time(dt)
             exportable.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
-            ##### Reassign temperatures #####
+            # Reassign temperatures
             previousTempList = list(currentTempList)
             currentTempList = []
 
         previousTempList = initialize.delInsulation(previousTempList, rNodesIns)
         
-        ##### Returns the last list returned from calculations #####
         return previousTempList
 
 
@@ -105,7 +113,7 @@ class Storage:
         previousTempList = mapping.radiusToLength(tempFromStoring)
         currentTempList = []
 
-        ##### Call functions #####
+        #Call functions
         coefficients, constants = initialize.prepareCharging(zNodes)
         coeffMatrix = DischargingArray(coefficients, constants).coeffMatrix()
 
@@ -129,51 +137,6 @@ class Storage:
         return previousTempList
 
 
-# During discharging, we should use the same matrix/ similar matrix to make it easier. 
-# The only thing that should change is the direction in which the HTF flows. 
-
-# storage = Storage(export.getFileName(logDir), export.Count().time())
-# z = Storage().charge()
+z = Storage().charge()
 # r = Storage().store(z)
 # zz = Storage().discharge(r)
-
-# def function(x):
-#     return x*x
-
-# start = time.time()
-# if __name__ == '__main__':
-#     with Pool as p:
-#         p.map(function, [1, 2, 3])
-
-# end = time.time()
-
-# print(end-start)
-
-
-# def func(num):
-#     return [num, num**2, num**3]
-
-
-# start = time.time()
-# list = []
-# for i in range(800):
-#     list.append(func(i))
-
-# print(list)
-# end = time.time()
-# print(end-start)
-
-
-
-# start = time.time()
-# if __name__ == '__main__':
-    
-#     p = Pool(processes=4)
-
-
-
-#     result = p.map(func, range(800))
-#     print(result)
-
-# end = time.time()
-# print(end-start)

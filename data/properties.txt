@@ -1,6 +1,6 @@
 # Properties
 
-length = 3               # m
+length = 2               # m
 radius = 0.5             # m
 insulation = 0.3         # m
 materialDiameter = 0.02  # m
@@ -29,6 +29,6 @@ c2 = 1 		       # /
 
 # Discretization
 
-dzDefined = 0.02 	       # m
-drDefined = 0.02 	       # m
+dzDefined = 0.4 	       # m
+drDefined = 0.1 	       # m
 dt = 0.1 		       # s
