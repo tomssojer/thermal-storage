@@ -11,11 +11,12 @@ sys.path.insert(0, parentdir)
 # Arrays to calculate the charging process 
 class ChargingArray():
 
+    # We add empty lists when we call an object
     def __init__(self, coefficients, constants):
         self.coefficients = coefficients
         self.constants = constants
 
-
+    # Matrix of coefficients
     def coeffMatrix(self):
         # Coefficients at the boundaries
         self.coefficients[0][0] = 2*k*dt + 2*h*dz*dt + thermalMass*(dz**2) - 2*G*cGas*dz*dt
@@ -31,7 +32,7 @@ class ChargingArray():
 
         return self.coefficients
 
-
+    # Array of constants
     def constArray(self, previousTemperatures):
         # Constants at the boundaries
         self.constants[0] = thermalMass*(dz**2)*previousTemperatures[0] + 2*h*dz*dt*Tfluid
