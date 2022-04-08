@@ -1,6 +1,5 @@
 ##### Main python file for simulations #####
 
-from h11 import Data
 import numpy as np
 import os
 from package import export, initialize, mapping
@@ -13,7 +12,7 @@ logDir = os.path.join(rootDir, r'logs')
 if not os.path.exists(logDir):
     os.makedirs(logDir)
 
-exportable = export.Export(export.getFileName(logDir))
+# exportable = export.Export(export.getFileName(logDir))
 
 class Storage:
 
@@ -51,8 +50,8 @@ class Storage:
                 currentTempList.append(temperature)
 
             # Export the array of arrays
-            keepCount = export.Count.time(dt)
-            exportable.allTemperatures("Charging", currentTempList, keepCount)
+            # keepCount = export.Count.time(dt)
+            # exportable.allTemperatures("Charging", currentTempList, keepCount)
             # Assign new temperatures as previous, empty out the current temperature array
             if timeStep % 100 == 0:
                 print(DataFrame(currentTempList))
@@ -66,8 +65,8 @@ class Storage:
             temperature = temperature.tolist()
             currentTempList.append(temperature)
 
-            keepCount = export.Count.time(dt)
-            exportable.allTemperatures("Charging", currentTempList, keepCount)
+            # keepCount = export.Count.time(dt)
+            # exportable.allTemperatures("Charging", currentTempList, keepCount)
             # Assign new temperatures as previous, empty out the current temperature array
             previousTempList = list(currentTempList)
             currentTempList = []

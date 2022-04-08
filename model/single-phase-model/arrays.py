@@ -1,12 +1,12 @@
 import os
 import sys
 import inspect
-from properties import *
 
 currentdir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
+from properties import *
 
 # Arrays to calculate the charging process 
 class ChargingArray():
@@ -19,16 +19,16 @@ class ChargingArray():
     # Matrix of coefficients
     def coeffMatrix(self):
         # Coefficients at the boundaries
-        self.coefficients[0][0] = 2*k*dt + 2*h*dz*dt + thermalMass*(dz**2) - 2*G*cGas*dz*dt
-        self.coefficients[0][1] = -2*k*dt + 2*G*cGas*dz*dt
-        self.coefficients[-1][-2] = -2*k*dt - 2*G*cGas*dz*dt
-        self.coefficients[-1][-1] = 2*k*dt + thermalMass*(dz**2) + 2*G*cGas*dz*dt
+        self.coefficients[0][0] = 2*k*dt + 2*h*dz*dt + thermalMass*(dz**2) + 2*G*cGas*dz*dt
+        self.coefficients[0][1] = -2*k*dt - 2*G*cGas*dz*dt
+        self.coefficients[-1][-2] = -2*k*dt + 2*G*cGas*dz*dt
+        self.coefficients[-1][-1] = 2*k*dt + thermalMass*(dz**2) - 2*G*cGas*dz*dt
 
         # Coefficients in the storage
         for i in range(1, len(self.coefficients) - 1):
-            self.coefficients[i][i-1] = -2*k*dt - G*cGas*dz*dt
+            self.coefficients[i][i-1] = -2*k*dt + G*cGas*dz*dt
             self.coefficients[i][i] = 4*k*dt + 2*thermalMass*(dz**2)
-            self.coefficients[i][i+1] = -2*k*dt + G*cGas*dz*dt
+            self.coefficients[i][i+1] = -2*k*dt - G*cGas*dz*dt
 
         return self.coefficients
 
