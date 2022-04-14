@@ -1,9 +1,7 @@
-##### Main python file for simulations #####
-
 import numpy as np
 import os
 from package import export, initialize, mapping
-from arrays import ChargingArray, StoringArray, DischargingArray
+from arrays import *
 from properties import *
 from pandas import DataFrame
 
@@ -11,8 +9,6 @@ rootDir = os.getcwd()
 logDir = os.path.join(rootDir, r'logs')
 if not os.path.exists(logDir):
     os.makedirs(logDir)
-
-# exportable = export.Export(export.getFileName(logDir))
 
 class Storage:
 
@@ -28,114 +24,94 @@ class Storage:
     def __init__(self):
         pass
 
+##########################################################################################
+# Glej kodo tukaj
+
     def charge(self):
 
-        ##### Initialize temperatures #####
+        # Tukaj se pripravi list iz začetnih temperatur
         previousTempList = initialize.temperatures(zNodes, rNodes, ambientTemp)
-        print(previousTempList)
         currentTempList = []  
 
-        # exportable.initialTemperatures(previousTempList)   
-
-        ##### Call functions #####
+        # Pripravimo matrike za levo in desno stran
         coefficients, constants = initialize.prepareCharging(zNodes)
         coeffMatrix = ChargingArray(coefficients, constants).coeffMatrix()
-
-        # Calculate temperatures for every time step
-        for timeStep in range(10000):
-            for array in previousTempList:
-                constArray = ChargingArray(coefficients, constants).constArray(array)
-                temperature = np.linalg.solve(coeffMatrix, constArray)
-                temperature = temperature.tolist()
-                currentTempList.append(temperature)
-
-            # Export the array of arrays
-            # keepCount = export.Count.time(dt)
-            # exportable.allTemperatures("Charging", currentTempList, keepCount)
-            # Assign new temperatures as previous, empty out the current temperature array
-            if timeStep % 100 == 0:
-                print(DataFrame(currentTempList))
-            previousTempList = list(currentTempList)
-            currentTempList = []
-        for timeStep in range(1000):
-            constArray = ChargingArray(
-                coefficients, constants).constArray(previousTempList[0])
+        
+        # 1000x poračunamo temperature v hranilniku
+        # V tem primeru računamo samo temperature v prvem arrayu (zato pa previousTempList[0])
+        # previousTempList je sicer sestavljen iz nested arrayov, ampak kličemo samo prvega
+        for timeStep in range(int(dt*10000)):
+            # Uporabimo constArray metodo iz arrays.py zato da dobimo matriko na desni strani
+            constArray = ChargingArray(coefficients, constants).constArray(previousTempList[0])
             
+            # Izračunamo temperature in dodamo v nov array
             temperature = np.linalg.solve(coeffMatrix, constArray)
             temperature = temperature.tolist()
             currentTempList.append(temperature)
 
-            # keepCount = export.Count.time(dt)
-            # exportable.allTemperatures("Charging", currentTempList, keepCount)
-            # Assign new temperatures as previous, empty out the current temperature array
-            previousTempList = list(currentTempList)
+            # Izpišemo temperature v terminalu, tukaj lahko filtriraš, koliko jih izpiše
+            if timeStep % 100 == 0:
+                print(DataFrame(currentTempList))
+
+            previousTempList = currentTempList
             currentTempList = []
 
         return previousTempList
 
+##################################################################################################
 
+    # def store(self, tempFromCharging):
 
-    def store(self, tempFromCharging):
+    #     previousTempList = mapping.lengthToRadius(tempFromCharging)
+    #     previousTempList = initialize.makeInsulation(previousTempList, ambientTemp, rNodesIns)
+    #     currentTempList = []
 
-        ##### Mapping temperatures #####
-        previousTempList = mapping.lengthToRadius(tempFromCharging)
-        previousTempList = initialize.makeInsulation(previousTempList, ambientTemp, rNodesIns)
-        currentTempList = []
+    #     coefficients, constants = initialize.prepareStoring(rNodes, rNodesIns)
+    #     coeffMatrix = StoringArray(coefficients, constants).coeffMatrix()
 
-        ##### Calling arrays from other classes #####
-        coefficients, constants = initialize.prepareStoring(rNodes, rNodesIns)
-        coeffMatrix = StoringArray(coefficients, constants).coeffMatrix()
+    #     for timeStep in range(10):
+    #         for array in previousTempList:
+    #             constArray = StoringArray(coefficients, constants).constArray(array)
+    #             temperature = np.linalg.solve(coeffMatrix, constArray)
+    #             temperature = temperature.tolist()
+    #             currentTempList.append(temperature)
 
-        ##### Solve the equations #####
-        for timeStep in range(10):
-            for array in previousTempList:
-                constArray = StoringArray(coefficients, constants).constArray(array)
-                temperature = np.linalg.solve(coeffMatrix, constArray)
-                temperature = temperature.tolist()
-                currentTempList.append(temperature)
+    #         keepCount = export.Count.time(dt)
+    #         # exportable.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
+    #         # Reassign temperatures
+    #         previousTempList = list(currentTempList)
+    #         currentTempList = []
 
-            # Export every time step 
-            keepCount = export.Count.time(dt)
-            exportable.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
-            # Reassign temperatures
-            previousTempList = list(currentTempList)
-            currentTempList = []
-
-        previousTempList = initialize.delInsulation(previousTempList, rNodesIns)
+    #     previousTempList = initialize.delInsulation(previousTempList, rNodesIns)
         
-        return previousTempList
+    #     return previousTempList
 
 
-    def discharge(self, tempFromStoring):
+    # def discharge(self, tempFromStoring):
         
-        # Mapping temperatures
-        previousTempList = mapping.radiusToLength(tempFromStoring)
-        currentTempList = []
+    #     previousTempList = mapping.radiusToLength(tempFromStoring)
+    #     currentTempList = []
 
-        #Call functions
-        coefficients, constants = initialize.prepareCharging(zNodes)
-        coeffMatrix = DischargingArray(coefficients, constants).coeffMatrix()
+    #     coefficients, constants = initialize.prepareCharging(zNodes)
+    #     coeffMatrix = DischargingArray(coefficients, constants).coeffMatrix()
 
-        # Calculate temperatures for every time step
-        for timeStep in range(10):
-            for array in previousTempList:
-                constArray = DischargingArray(
-                    coefficients, constants).constArray(array)
-                temperature = np.linalg.solve(coeffMatrix, constArray)
-                temperature = temperature.tolist()
-                currentTempList.append(temperature)
+    #     for timeStep in range(10):
+    #         for array in previousTempList:
+    #             constArray = DischargingArray(
+    #                 coefficients, constants).constArray(array)
+    #             temperature = np.linalg.solve(coeffMatrix, constArray)
+    #             temperature = temperature.tolist()
+    #             currentTempList.append(temperature)
 
-            # Export the array of arrays
-            keepCount = export.Count.time(dt)
-            export.allTemperatures("Discharging", currentTempList, keepCount)
+    #         # Export the array of arrays
+    #         keepCount = export.Count.time(dt)
+    #         export.allTemperatures("Discharging", currentTempList, keepCount)
 
-            # Assign new temperatures as previous, empty out the current temperature array
-            previousTempList = list(currentTempList)
-            currentTempList = []
+    #         # Assign new temperatures as previous, empty out the current temperature array
+    #         previousTempList = list(currentTempList)
+    #         currentTempList = []
 
-        return previousTempList
+    #     return previousTempList
 
 
 z = Storage().charge()
-# r = Storage().store(z)
-# zz = Storage().discharge(r)

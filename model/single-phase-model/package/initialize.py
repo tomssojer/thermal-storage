@@ -32,24 +32,24 @@ def temperatures(zNodes, rNodes, temperature):
 
 
 
-def makeInsulation(innerTemperatures, temperature, insNodes):
+# def makeInsulation(innerTemperatures, temperature, insNodes):
     
-    allTemperatures = list(innerTemperatures)
-    # Appends insulation temperatures to arrays
-    for subList in allTemperatures:
-        for insulationNode in range(insNodes):
-            subList.append(temperature)
+#     allTemperatures = list(innerTemperatures)
+#     # Appends insulation temperatures to arrays
+#     for subList in allTemperatures:
+#         for insulationNode in range(insNodes):
+#             subList.append(temperature)
 
-    return allTemperatures
+#     return allTemperatures
 
 
 
-def delInsulation(allTemperatures, insNodes):
+# def delInsulation(allTemperatures, insNodes):
 
-    innerTemperatures = list(allTemperatures)
-    # Deletes insulation temperatures from arrays
-    for subList in innerTemperatures:
-        for insulationNode in range(insNodes):
-            subList.pop(-1)
+#     innerTemperatures = list(allTemperatures)
+#     # Deletes insulation temperatures from arrays
+#     for subList in innerTemperatures:
+#         for insulationNode in range(insNodes):
+#             subList.pop(-1)
     
-    return innerTemperatures
+#     return innerTemperatures
