@@ -13,7 +13,8 @@ flowVelocity = None
 dinamicViscosity = None
 c1 = c2 = None
 # Discretization
-dzDefined = drDefined = dt = None
+dzDefined = drDefined = dt = dtStore = None
+exportDtCharging = exportDtStoring = None
 
 with open("./data/properties.txt", "r") as file:
     exec(file.read())
@@ -28,11 +29,15 @@ k = kStorage*(1 - voidFrac*(kStorage - effConductivity)/(effConductivity + voidF
 
 ############ Discretization ###############
 # z-direction discretization
-zNodes = int(length/dzDefined) + 1  # ------- /
+zNodes = round(length/dzDefined) + 1  # ------- /
 dz = length/(zNodes - 1)  # ------------------- m
 # Storage r-direction discretization
-rNodes = int(radius/drDefined) + 1  # ------- /
+rNodes = round(radius/drDefined) + 1  # ------- /
 dr = radius/(rNodes - 1)  # ------------------- m
 # Insulation r-direction
-rNodesIns = int(insulation/drDefined)
-drIns = insulation/rNodesIns
+if insulation == 0:
+    rNodesIns = 0
+    drIns = 0
+else:
+    rNodesIns = round(insulation/drDefined)
+    drIns = insulation/rNodesIns

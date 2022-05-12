@@ -1,34 +1,37 @@
 # Properties
 
-length = 0.5             # m
-radius = 0.5             # m
-insulation = 0.3         # m
-materialDiameter = 0.02  # m
-voidFrac = 0.4           # /
-kStorage = 10            # W/mK
-rhoStorage = 750         # kg/m3
-cStorage = 600           # J/kgK
-kGas = 2                 # W/mK
-rhoGas = 0.38            # kg/m3
-cGas = 520               # J/kgK
-kIns = 4                 # W/mK
-rhoIns = 200             # kg/m3
-cIns = 300               # J/kgK
-kf = 3                   # W/mK
-ks = 8                   # W/mK
-ambientTemp = 293        # K
-Tfluid = 1000            # K
-finalDifference = 100    # K
-h = 1000                 # W/m2K
-ambienth = 20            # W/m2K
-G = 10                   # kg/m2s
-flowVelocity = 10        # m/s
-dinamicViscosity = 0.01  # Pa*s
-c1 = 0.115               # /
-c2 = 1                   # /
+length = 1 # m
+radius = 0.5 # m
+insulation = 0 # m
+materialDiameter = 0.02 # m
+voidFrac = 0.325 # /
+kStorage = 603 # W/mK
+rhoStorage = 1800 # kg/m3
+cStorage = 1882 # J/kgK
+kGas = 0.435 # W/mK
+rhoGas = 0.038 # kg/m3
+cGas = 5193 # J/kgK
+kIns = 0.33 # W/mK
+rhoIns = 3100 # kg/m3
+cIns = 1100 # J/kgK
+kf = 3 # W/mK
+ks = 8 # W/mK
+ambientTemp = 293 # K
+Tfluid = 1293 # K
+finalDifference = 200 # K
+h = 10000 # W/m2K
+ambienth = 10000 # W/m2K
+G = 0.225 # kg/m2s
+flowVelocity = 10 # m/s
+dinamicViscosity = 0.01 # Pa*s
+c1 = 0.115 # /
+c2 = 1 # /
 
 # Discretization
 
-dzDefined = 0.1          # m
-drDefined = 0.1          # m
-dt = 0.1                 # s
+dzDefined = 0.1 # m
+drDefined = 0.05 # m
+dt = 1 # s
+dtStore = 60 # s
+exportDtCharging = 60 # s
+exportDtStoring = 1 # s

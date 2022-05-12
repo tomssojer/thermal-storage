@@ -3,115 +3,82 @@ import os
 from package import export, initialize, mapping
 from arrays import *
 from properties import *
-from pandas import DataFrame
 
 rootDir = os.getcwd()
 logDir = os.path.join(rootDir, r'logs')
 if not os.path.exists(logDir):
     os.makedirs(logDir)
 
+exportable = export.Export(export.getFileName(logDir), length, radius)
+
 class Storage:
 
-    # Methods follow this pattern:
-    # 1. Initialize temperatures by using starting temperatures or mapping
-    #    from the previous process
-    # 2. Prepare an empty list for temperatures to put in
-    # 3. Prepare arrays for solving
-    # 4. Solve arrays one by one and append results to the empty array
-    # 5. Export temperatures to a txt file
-    # 6. Return the last calculated array of temperatures
+    def __init__(self, temperatureList = None):
+        self.temperatureList = temperatureList
 
-    def __init__(self):
-        pass
+    def process(self, process, processArray, outerTemperature):
 
-##########################################################################################
-# Glej kodo tukaj
+        match process:
+            case "Charging":
+                self.temperatureList = initialize.temperatures(zNodes, rNodes, ambientTemp)
+                coefficients, constants = initialize.prepareCharging(zNodes)
+                difference = abs(outerTemperature - self.temperatureList[0][-1])
 
-    def charge(self):
+            case "Storing":
+                self.temperatureList = mapping.lengthToRadius(self.temperatureList)
+                self.temperatureList = initialize.makeInsulation(self.temperatureList, ambientTemp, rNodesIns)
+                coefficients, constants = initialize.prepareStoring(
+                    rNodes, rNodesIns)
+                difference = abs(outerTemperature - self.temperatureList[-1][0])
 
-        # Tukaj se pripravi list iz začetnih temperatur
-        previousTempList = initialize.temperatures(zNodes, rNodes, ambientTemp)
-        currentTempList = []  
+            case "Discharging":
+                self.temperatureList = mapping.radiusToLength(self.temperatureList)
+                coefficients, constants = initialize.prepareCharging(zNodes)
+                difference = abs(outerTemperature - self.temperatureList[-1][0])
 
-        # Pripravimo matrike za levo in desno stran
-        coefficients, constants = initialize.prepareCharging(zNodes)
-        coeffMatrix = ChargingArray(coefficients, constants).coeffMatrix()
-        
-        # 1000x poračunamo temperature v hranilniku
-        # V tem primeru računamo samo temperature v prvem arrayu (zato pa previousTempList[0])
-        # previousTempList je sicer sestavljen iz nested arrayov, ampak kličemo samo prvega
-        for timeStep in range(int(dt*10000)):
-            # Uporabimo constArray metodo iz arrays.py zato da dobimo matriko na desni strani
-            constArray = ChargingArray(coefficients, constants).constArray(previousTempList[0])
-            
-            # Izračunamo temperature in dodamo v nov array
-            temperature = np.linalg.solve(coeffMatrix, constArray)
-            temperature = temperature.tolist()
-            currentTempList.append(temperature)
+            case _:
+                raise Exception("This is not a valid process, check the syntax.")
 
-            # Izpišemo temperature v terminalu, tukaj lahko filtriraš, koliko jih izpiše
-            if timeStep % 100 == 0:
-                print(DataFrame(currentTempList))
+        currentTempList = []
+        coeffMatrix = processArray(coefficients, constants).coeffMatrix()
 
-            previousTempList = currentTempList
+        while difference >= finalDifference:
+            for array in self.temperatureList:
+                constArray = processArray(
+                    coefficients, constants).constArray(array)
+                temperature = np.linalg.solve(coeffMatrix, constArray)
+                temperature = temperature.tolist()
+                currentTempList.append(temperature)
+
+            match process:
+                case ("Charging"|"Discharging"):
+                    keepCount = export.Count.time(dt)
+                    if keepCount % exportDtCharging == 0:
+                        exportable.allTemperatures(process, currentTempList, keepCount)
+
+                case "Storing":
+                    keepCount = export.Count.time(dtStore)
+                    if keepCount % exportDtStoring == 0:
+                        exportable.allStoringTemperatures(
+                            currentTempList, rNodesIns, keepCount)
+
+            self.temperatureList = list(currentTempList)
             currentTempList = []
 
-        return previousTempList
+            match process:
+                case "Charging":
+                    difference = abs(outerTemperature - self.temperatureList[0][-1])
+                case ("Storing"|"Discharging"):
+                    difference = abs(outerTemperature - self.temperatureList[-1][0])
 
-##################################################################################################
+        if process == "Storing":
+            self.temperatureList = initialize.delInsulation(self.temperatureList, rNodesIns)
 
-    # def store(self, tempFromCharging):
+        return self.temperatureList
 
-    #     previousTempList = mapping.lengthToRadius(tempFromCharging)
-    #     previousTempList = initialize.makeInsulation(previousTempList, ambientTemp, rNodesIns)
-    #     currentTempList = []
+    def currentTemperatures(self):
+        return self.temperatureList
 
-    #     coefficients, constants = initialize.prepareStoring(rNodes, rNodesIns)
-    #     coeffMatrix = StoringArray(coefficients, constants).coeffMatrix()
-
-    #     for timeStep in range(10):
-    #         for array in previousTempList:
-    #             constArray = StoringArray(coefficients, constants).constArray(array)
-    #             temperature = np.linalg.solve(coeffMatrix, constArray)
-    #             temperature = temperature.tolist()
-    #             currentTempList.append(temperature)
-
-    #         keepCount = export.Count.time(dt)
-    #         # exportable.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
-    #         # Reassign temperatures
-    #         previousTempList = list(currentTempList)
-    #         currentTempList = []
-
-    #     previousTempList = initialize.delInsulation(previousTempList, rNodesIns)
-        
-    #     return previousTempList
-
-
-    # def discharge(self, tempFromStoring):
-        
-    #     previousTempList = mapping.radiusToLength(tempFromStoring)
-    #     currentTempList = []
-
-    #     coefficients, constants = initialize.prepareCharging(zNodes)
-    #     coeffMatrix = DischargingArray(coefficients, constants).coeffMatrix()
-
-    #     for timeStep in range(10):
-    #         for array in previousTempList:
-    #             constArray = DischargingArray(
-    #                 coefficients, constants).constArray(array)
-    #             temperature = np.linalg.solve(coeffMatrix, constArray)
-    #             temperature = temperature.tolist()
-    #             currentTempList.append(temperature)
-
-    #         # Export the array of arrays
-    #         keepCount = export.Count.time(dt)
-    #         export.allTemperatures("Discharging", currentTempList, keepCount)
-
-    #         # Assign new temperatures as previous, empty out the current temperature array
-    #         previousTempList = list(currentTempList)
-    #         currentTempList = []
-
-    #     return previousTempList
-
-
-z = Storage().charge()
+a = Storage().process("Charging", ChargingArray, Tfluid)
+b = Storage(a).process("Storing", StoringArray, ambientTemp)
+c = Storage(b).process("Discharging", DischargingArray, ambientTemp)

@@ -1,9 +1,5 @@
 import os
-
-from pandas import DataFrame
 from . import mapping
-length = 3
-radius = 0.5
 
 class Count:
     counter = 0
@@ -11,7 +7,7 @@ class Count:
     def time(dt):
         Count.counter += dt
         Count.counter = round(Count.counter, 2)
-        print(Count.counter)
+        
         return Count.counter
 
 def getFileName(directory):
@@ -31,8 +27,10 @@ def getFileName(directory):
 
 class Export:
 
-    def __init__(self, fileName):
+    def __init__(self, fileName, length, radius):
         self.fileName = fileName
+        self.length = length
+        self.radius = radius
 
     def initialTemperatures(self, tempList):
 
@@ -43,10 +41,10 @@ class Export:
             file.write("t = 0.0 s\n")
             file.write("r(m)|z(m)\t")
             for dz in range(0, len(tempList[0])):
-                file.write(f"{dz*length/(len(tempList[0])-1)}\t")
+                file.write(f"{dz*self.length/(len(tempList[0])-1)}\t")
             file.write("\n")
             for array in range(len(tempList)):
-                file.write(f"{round(array*radius/(len(tempList)-1), 2)}\t")
+                file.write(f"{round(array*self.radius/(len(tempList)-1), 2)}\t")
                 for number in tempList[array]:
                     file.write("{:.2f}".format(number) + "\t")
                 file.write("\n")
@@ -59,13 +57,14 @@ class Export:
         with open(f"{self.fileName}.txt", "a") as file:
             # Write into the file
             file.write("{}\n".format(message))
-            file.write("t = {} s\n".format(keepCount))
+            file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
             file.write("r(m)|z(m)\t")
             for dz in range(0, len(tempList[0])):
-                file.write(f"{dz*length/(len(tempList[0])-1)}\t")
+                file.write(f"{dz*self.length/(len(tempList[0])-1)}\t")
             file.write("\n")
+
             for array in range(len(tempList)):
-                file.write(f"{round(array*radius/(len(tempList)-1), 2)}\t")
+                file.write(f"{round(array*self.radius/(len(tempList)-1), 2)}\t")
                 for number in tempList[array]:
                     file.write("{:.2f}".format(number) + "\t")
                 file.write("\n")
@@ -76,15 +75,15 @@ class Export:
 
         with open(f"{self.fileName}.txt", "a") as file:
             file.write("Storing\n")
-            file.write("t = {} s\n".format(keepCount))
+            file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
 
             mappedList = mapping.radiusToLength(tempList)
             file.write("r(m)|z(m)\t")
             for dz in range(0, len(mappedList[0])):
-                file.write(f"{dz*length/(len(mappedList[0])-1)}\t")
+                file.write(f"{dz*self.length/(len(mappedList[0])-1)}\t")
             file.write("\n")
             for array in range(insulationNodes, len(mappedList)):
-                file.write(f"{round((array-insulationNodes)*radius/(len(mappedList)-1-insulationNodes), 2)}\t")
+                file.write(f"{round((array-insulationNodes)*self.radius/(len(mappedList)-1-insulationNodes), 2)}\t")
                 for number in mappedList[array]:
                     file.write("{:.2f}".format(number) + "\t")
                 file.write("\n")
