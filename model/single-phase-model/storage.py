@@ -9,13 +9,17 @@ logDir = os.path.join(rootDir, r'logs')
 if not os.path.exists(logDir):
     os.makedirs(logDir)
 
-exportable = export.Export(export.getFileName(logDir), length, radius)
+exportable = export.Export(export.getFileName(logDir), length, radius, insulation)
 
 class Storage:
 
-    def __init__(self, temperatureList = None):
+    def __init__(self, temperatureList):
         self.temperatureList = temperatureList
 
+    def outputCurrentTemperatures(self):
+        return self.temperatureList
+
+    # Tukaj je definicija procesa, lahko je polnjenje, hranjenje ali praznjenje
     def process(self, process, processArray, outerTemperature):
 
         match process:
@@ -41,7 +45,9 @@ class Storage:
 
         currentTempList = []
         coeffMatrix = processArray(coefficients, constants).coeffMatrix()
+        initialCount = export.Count.endCount()
 
+        # Zanka, ki se izvaja dokler ni razlika med točko v hranilniku in zunanjo točko manjša od 200°C
         while difference >= finalDifference:
             for array in self.temperatureList:
                 constArray = processArray(
@@ -51,20 +57,32 @@ class Storage:
                 currentTempList.append(temperature)
 
             match process:
-                case ("Charging"|"Discharging"):
+                case ("Discharging"):
                     keepCount = export.Count.time(dt)
-                    if keepCount % exportDtCharging == 0:
+                    # Dont export every time, but when determined by exportDt
+                    if (keepCount - initialCount) % exportDtCharging == 0:
                         exportable.allTemperatures(process, currentTempList, keepCount)
+
+                case "Charging":
+                    keepCount = export.Count.time(dt)
+                    # Dont export every time, but when determined by exportDt
+                    if (keepCount - initialCount) % exportDtCharging == 0:
+                        exportable.allTemperatures(
+                            process, currentTempList, keepCount)
+                        # exportable.heatStored(
+                    # currentTempList, ambientTemp, cp, keepCount)
 
                 case "Storing":
                     keepCount = export.Count.time(dtStore)
-                    if keepCount % exportDtStoring == 0:
+                    if (keepCount - initialCount) % exportDtStoring == 0:
                         exportable.allStoringTemperatures(
                             currentTempList, rNodesIns, keepCount)
+                        # exportable.heatStoredStoring(currentTempList, ambientTemp, rNodesIns, cp, keepCount)
 
             self.temperatureList = list(currentTempList)
             currentTempList = []
 
+            # Če je razlika manjša, se bo zanka končala
             match process:
                 case "Charging":
                     difference = abs(outerTemperature - self.temperatureList[0][-1])
@@ -73,12 +91,13 @@ class Storage:
 
         if process == "Storing":
             self.temperatureList = initialize.delInsulation(self.temperatureList, rNodesIns)
+        print(".")
 
         return self.temperatureList
 
-    def currentTemperatures(self):
-        return self.temperatureList
 
-a = Storage().process("Charging", ChargingArray, Tfluid)
-b = Storage(a).process("Storing", StoringArray, ambientTemp)
-c = Storage(b).process("Discharging", DischargingArray, ambientTemp)
+# Tukaj kličemo metode znotraj Storage razreda
+storage = Storage([])
+charging = storage.process("Charging", ChargingArray, Tfluid)
+storing = storage.process("Storing", StoringArray, ambientTemp)
+discharging = storage.process("Discharging", DischargingArray, ambientTemp)
