@@ -66,11 +66,13 @@ class StoringArray():
 
         if drIns > 0: 
             # Coefficients at the storage/insulation boundary
-            K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            # K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            K = thermalMass*(rNodes-1)*2
             K1 = 2*(rNodes - 1)
-            self.coefficients[rNodes-1][rNodes-2] = (-1 - K1)*k*dtStore
-            self.coefficients[rNodes-1][rNodes-1] = k*dtStore - kIns*dtStore + K1*dtStore*k + K1*dtStore*kIns + K*(dr**2)
-            self.coefficients[rNodes-1][rNodes] = (1 - K1)*kIns*dtStore
+            kBoth = k*kIns/(k+kIns)
+            self.coefficients[rNodes-1][rNodes-2] = (-1 - K1)*kBoth*dtStore
+            self.coefficients[rNodes-1][rNodes-1] = kBoth*dtStore - kBoth*dtStore + K1*dtStore*kBoth + K1*dtStore*kBoth + K*(dr**2)
+            self.coefficients[rNodes-1][rNodes] = (1 - K1)*kBoth*dtStore
 
             # Coefficients in the insulation
             for j in range(rNodes, rNodes + rNodesIns - 1):
@@ -102,7 +104,8 @@ class StoringArray():
 
         if drIns > 0:
             # Constants at the storage/insulation boundary
-            K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            # K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            K = thermalMass*(rNodes-1)*2
             self.constants[rNodes-1] = K*(dr**2)*previousTemperatures[rNodes-1]
 
             # Constants in the insulation

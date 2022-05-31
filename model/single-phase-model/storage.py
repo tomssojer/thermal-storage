@@ -69,15 +69,15 @@ class Storage:
                     if (keepCount - initialCount) % exportDtCharging == 0:
                         exportable.allTemperatures(
                             process, currentTempList, keepCount)
-                        # exportable.heatStored(
-                    # currentTempList, ambientTemp, cp, keepCount)
+                        exportable.heatStored(
+                    currentTempList, ambientTemp, cp, keepCount)
 
                 case "Storing":
                     keepCount = export.Count.time(dtStore)
                     if (keepCount - initialCount) % exportDtStoring == 0:
                         exportable.allStoringTemperatures(
                             currentTempList, rNodesIns, keepCount)
-                        # exportable.heatStoredStoring(currentTempList, ambientTemp, rNodesIns, cp, keepCount)
+                        exportable.heatStoredStoring(currentTempList, ambientTemp, rNodesIns, cp, keepCount)
 
             self.temperatureList = list(currentTempList)
             currentTempList = []

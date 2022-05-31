@@ -1,7 +1,7 @@
 # Properties	
 length = 2 # m
 radius = 0.5 # m
-insulation = 0.2 # m
+insulation = 0.4 # m
 materialDiameter = 0.02 # m
 voidFrac = 0.325 # /
 kStorage = 80 # W/mK
@@ -27,9 +27,9 @@ c1 = 0.115 # /
 c2 = 1 # /
 
 # Discretization
-dzDefined = 0.05 # m
-drDefined = 0.05 # m
-dt = 60 # s
-dtStore = 1200 # s
+dzDefined = 0.02 # m
+drDefined = 0.02 # m
+dt = 30 # s
+dtStore = 120 # s
 exportDtCharging = 300 # s
-exportDtStoring = 6000 # s
+exportDtStoring = 1800 # s
