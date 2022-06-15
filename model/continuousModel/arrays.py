@@ -2,11 +2,13 @@ import os
 import sys
 import inspect
 
+from numpy import void
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from properties import *
+from importer import *
 
 class ChargingArray:
 
@@ -16,42 +18,70 @@ class ChargingArray:
 
     def coeffMatrix(self):
 
-        arrLength = len(self.coefficients)
-        halfLength = int(arrLength/2)
+        wholeArray = 2*len(self.coefficients)
+        halfArray = len(self.coefficients)
 
-        self.coefficients[0][0] = voidFrac*rhoGas*cGas*2*dz**2 + 4*kf*dt + h*A*2*dt*dz**2
-        self.coefficients[0][1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - kf*2*dt
-        self.coefficients[0][halfLength] = -h*A*2*dt*dz**2
+        # Solid - 1. robni pogoj
+        self.coefficients[0][0] = (1-voidFrac)*rhoStorage*cStorage*dz** + ks*dt + h*A*dt*dz**2
+        self.coefficients[0][1] = -ks*dt
+        self.coefficients[0][halfArray] = -2*h*A*dt*dz**2
 
-        for i in range(1, halfLength-1):
-            self.coefficients[i][i-1] = -voidFrac*rhoGas*cGas*flowVelocity/(2*dz)
-            self.coefficients[i][i] = voidFrac*rhoGas*cGas/dt + h*A
-            self.coefficients[i][i+1] = voidFrac*rhoGas*cGas*flowVelocity/(2*dz)
-            self.coefficients[i][halfLength+i] = -h*A
+        # Solid - vmesne enačbe
+        for i in range(1, halfArray-1):
+            self.coefficients[i][i-1] = -ks*dt
+            self.coefficients[i][i] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt + h*A*dt*dz**2
+            self.coefficients[i][i+1] = -ks*dt
+            self.coefficients[i][halfArray+1] = h*A*dt*dz**2
 
-        self.coefficients[halfLength-1][halfLength-2] = - voidFrac*rhoGas*cGas*flowVelocity/dz
-        self.coefficients[halfLength-1][halfLength-1] = voidFrac*rhoGas*cGas/dt + voidFrac*rhoGas*cGas*flowVelocity/dz + h*A
-        self.coefficients[halfLength-1][arrLength-1] = -h*A
+        # Solid - 2. robni pogoj
+        self.coefficients[halfArray-1][halfArray-2] = -ks*dt
+        self.coefficients[halfArray-1][halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt + h*A*dt*dz**2
+        self.coefficients[halfArray-1][halfArray] = -ks*dt
+        self.coefficients[halfArray-1][0] = -h*A*dt*dz**2
 
-        for i in range(halfLength, arrLength):
-            self.coefficients[i][i] = (1-voidFrac)*rhoGas*cGas/dt + h*A
-        for i in range(1, halfLength+1):
-            self.coefficients[halfLength-1+i][i-1] = -h*A
+        # Fluid - 1. robni pogoj
+        self.coefficients[halfArray][0] = 2*h*A*dt*dz**2
+        self.coefficients[halfArray][halfArray] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
+        self.coefficients[halfArray][halfArray+1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+
+        # Fluid - vmesne enačbe
+        for i in range(halfArray+1, wholeArray-1):
+            self.coefficients[i][i-halfArray+1] = -2*h*A*dt*dz**2
+            self.coefficients[i][i-1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+            self.coefficients[i][i] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
+            self.coefficients[i][i+1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+
+        # Fluid - 2. robni pogoj
+        self.coefficients[wholeArray-1][halfArray-1] = -h*A*dt*dz**2
+        self.coefficients[wholeArray-1][wholeArray-2] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - kf*dt
+        self.coefficients[wholeArray-1][wholeArray-1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz + kf*dt + h*A*dt*dz**2
 
         return self.coefficients
 
-    def constArray(self, previousTempList):
+    def constArray(self, solidPreviousTempList, fluidPreviousTempList):
 
-        arrLength = len(self.coefficients)
-        halfLength = int(arrLength/2)
+        wholeArray = 2*len(self.coefficients)
+        halfArray = len(self.coefficients)
 
-        self.constants[0] = voidFrac*rhoGas*cGas*flowVelocity/(2*dz)*Tfluid + voidFrac*rhoGas*cGas/dt*previousTempList[0]
+        # Solid - 1. robni pogoj
+        self.constants[0] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[0]
 
-        for i in range(1, halfLength):
-            self.constants[i] = voidFrac*rhoGas*cGas/dt*previousTempList[i]
+        # Solid - vmesne enačbe
+        for i in range(1, halfArray-1):
+            self.constants[i] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[i]
 
-        for i in range(halfLength, arrLength):
-            self.constants[i] = (1 - voidFrac)*rhoGas*cGas/dt*previousTempList[i]
+        # Solid - 2. robni pogoj
+        self.constants[halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[halfArray-1]
+
+        # Fluid - 1. robni pogoj
+        self.constants[halfArray] = (-voidFrac*rhoGas*cGas*flowVelocity*dt*dz+2*kf*dt)*Tfluid + 2*voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[0]
+
+        # Fluid - vmesne enačbe
+        for i in range(halfArray+1, wholeArray-1):
+            self.constants[i] = 2*voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[i]
+
+        # Fluid - 2. robni pogoj
+        self.constants[wholeArray-1] = voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[wholeArray-1]
 
         return self.constants
 

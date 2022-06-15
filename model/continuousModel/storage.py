@@ -4,7 +4,7 @@ import numpy as np
 import os
 from package import export, initialize, mapping
 from arrays import ChargingArray, StoringArray, DischargingArray
-from properties import *
+from importer import *
 from pandas import DataFrame
 
 rootDir = os.getcwd()

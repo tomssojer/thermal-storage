@@ -1,12 +1,10 @@
 import os
 import sys
 import inspect
-
-currentdir = os.path.dirname(os.path.abspath(
-    inspect.getfile(inspect.currentframe())))
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-from properties import *
+from importer import *
 
 ###############################################################################################
 # V coeffMatrix metodi se definirajo koeficienti za v matriko, v constArray pa konstante
@@ -14,9 +12,13 @@ from properties import *
 class ChargingArray():
 
     # We add empty lists when we call an object
-    def __init__(self, coefficients, constants):
+    def __init__(self, coefficients, constants, temperatureList):
         self.coefficients = coefficients
         self.constants = constants
+        self.temperatureList = temperatureList
+
+    def getProperties(self):
+        Node(a).thermalMass()
 
     # Matrix of coefficients
     def coeffMatrix(self):
@@ -161,3 +163,14 @@ class DischargingArray():
 
         return self.constants
 
+
+aList = [[100, 200, 300]]
+kStorageMapped = searchForProperty(aList, kStorage)
+rhoStorageMapped = searchForProperty(aList, rhoStorage)
+cStorageMapped = searchForProperty(aList, cStorage)
+kGasMapped = searchForProperty(aList, kGas)
+rhoGasMapped = searchForProperty(aList, rhoGas)
+cGasMapped = searchForProperty(aList, cGas)
+node = Node(aList, kStorageMapped, rhoStorageMapped, cStorageMapped, kGasMapped, rhoGasMapped, cGasMapped)
+print(node.capacity())
+print(rhoGasMapped)

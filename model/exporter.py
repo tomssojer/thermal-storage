@@ -1,6 +1,6 @@
 import os
-from turtle import pen
-from . import mapping
+from singlePhaseModel import mapping
+
 
 class Count:
     counter = 0
@@ -8,61 +8,61 @@ class Count:
     def time(deltaTime):
         Count.counter += deltaTime
         Count.counter = round(Count.counter, 3)
-        
+
         return Count.counter
 
     def endCount():
         return Count.counter
 
 
-def getFileName(directory):
-
+def getDirectoryName(directory):
     # Change to specified directory
     os.chdir(directory)
 
-    fileName = input("Specify name for the single phase model: ")
-    filePath = os.path.join(directory, "{}.txt".format(fileName))
-    while os.path.exists(filePath) == True:
-        fileName = input(
-            "A file with this name already exists. Specify a new one: ")
-        filePath = os.path.join(directory, "{}.txt".format(fileName))
-    print("Exporting...")
+    dirName = input("Directory to export: ")
+    dirPath = os.path.join(directory, dirName)
+    try:
+        os.mkdir(dirPath)
+    except OSError:
+        print("Try a different one")
+        getDirectoryName(directory)
 
-    return fileName
+    return dirPath
 
 class Export:
 
-    def __init__(self, fileName, length, radius, insulation):
-        self.fileName = fileName
+    def __init__(self, directory, length, radius, insulation):
+        self.directory = directory
         self.length = length
         self.radius = radius
         self.insulation = insulation
 
+    def fileName(self, fileName):
+        return os.path.join(self.directory, fileName)
+
     def initialTemperatures(self, tempList):
 
         # Open a file to append to:
-        with open(f"{self.fileName}.csv", "a") as file:
+        with open(f"{self.directory}/single-phase.csv", "a") as file:
             file.write("Initial temperatures\n")
             # Export the initial temperatures first
-            file.write("t = 0.0 s\n")
-            file.write("r(m)|z(m),")
+            file.write("t = 0.0 s\nr(m)|z(m),")
             for dz in range(0, len(tempList[0])):
                 file.write(f"{dz*self.length/(len(tempList[0])-1)},")
             file.write("\n")
             for array in range(len(tempList)):
                 file.write(f"{round(array*self.radius/(len(tempList)-1), 2)},")
                 for number in tempList[array]:
-                    file.write("{:.2f}".format(number) + ",")
+                    file.write("{:.2f},".format(number))
                 file.write("\n")
             file.write("\n")
-
 
     def allTemperatures(self, message, tempList, keepCount):
 
         # Open a file to append to:
-        with open(f"{self.fileName}.csv", "a") as file:
+        with open(f"{self.directory}/single-phase.csv", "a") as file:
             # Write into the file
-            file.write("{}\n".format(message))
+            file.write(f"{message}\n")
             file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
             file.write("r(m)|z(m),")
             for dz in range(0, len(tempList[0])):
@@ -73,16 +73,17 @@ class Export:
                 dimension = self.radius - self.radius*array/(len(tempList)-1)
                 file.write(f"{round(dimension, 2)},")
                 for number in tempList[array]:
-                    file.write("{:.2f}".format(number) + ",")
+                    file.write("{:.2f},".format(number))
                 file.write("\n")
             file.write("\n")
 
     # Export during the storing process and exclude insulation temperatures
     def allStoringTemperatures(self, tempList, insulationNodes, keepCount):
 
-        with open(f"{self.fileName}.csv", "a") as file:
+        with open(f"{self.directory}/single-phase.csv", "a") as file:
             file.write("Storing\n")
-            file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
+            file.write("t = {}s|{}h\n".format(
+                keepCount, round(keepCount/3600, 2)))
 
             mappedList = mapping.radiusToLength(tempList)
             file.write("r(m)|z(m),")
@@ -90,10 +91,10 @@ class Export:
                 file.write(f"{dz*self.length/(len(mappedList[0])-1)},")
             file.write("\n")
             for array in range(0, len(mappedList)):
-                dimension = (self.radius+self.insulation)*(1-(array)/(len(mappedList)-1))
+                dimension = (self.radius + self.insulation)*(1-(array)/(len(mappedList)-1))
                 file.write(f"{round(dimension, 2)},")
                 for number in mappedList[array]:
-                    file.write("{:.2f}".format(number) + ",")
+                    file.write("{:.2f},".format(number))
                 file.write("\n")
             file.write("\n")
             # file.write("r(m)|z(m),")
@@ -117,9 +118,9 @@ class Export:
                 tempAppend = temperature - tempInitial
                 tempDifferenceList.append(tempAppend)
 
-        heatPerKilo =  cp*sum(tempDifferenceList)/len(tempDifferenceList)
+        heatPerKilo = cp*sum(tempDifferenceList)/len(tempDifferenceList)
 
-        with open(f"{self.fileName}-heat-charging.csv", "a+") as file:
+        with open(f"{self.directory}/heat-charging.csv", "a+") as file:
             file.write("{:.2f},{:.2f}\n".format(keepCount/3600, heatPerKilo/1000))
 
     # Shranjena toplota med hranjenjem
@@ -128,15 +129,26 @@ class Export:
         tempDifferenceList = []
         mappedList = mapping.radiusToLength(tempList)
 
-        for index in range(insulationNodes, len(mappedList)):
+        for index in range(len(mappedList)):
             for temperature in mappedList[index]:
                 tempAppend = temperature - tempInitial
                 tempDifferenceList.append(tempAppend)
 
         heatPerKilo = cp*sum(tempDifferenceList)/len(tempDifferenceList)
 
-        with open(f"{self.fileName}-heat-storing.csv", "a+") as file:
-            file.write("{:.2f},{:.2f}\n".format(
-                keepCount/3600, heatPerKilo/1000))
-            
+        with open(f"{self.directory}/heat-storing.csv", "a+") as file:
+            file.write("{:.2f},{:.2f}\n".format(keepCount/3600, heatPerKilo/1000))
 
+        # tempDifferenceList = []
+        # mappedList = mapping.radiusToLength(tempList)
+
+        # for index in range(insulationNodes, len(mappedList)):
+        #     for temperature in mappedList[index]:
+        #         tempAppend = temperature - tempInitial
+        #         tempDifferenceList.append(tempAppend)
+
+        # heatPerKilo = cp*sum(tempDifferenceList)/len(tempDifferenceList)
+
+        # with open(f"{self.fileName}-heat-storing.csv", "a+") as file:
+        #     file.write("{:.2f},{:.2f}\n".format(
+        #         keepCount/3600, heatPerKilo/1000))
