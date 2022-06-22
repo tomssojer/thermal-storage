@@ -1,12 +1,12 @@
-def prepareCharging(zNodes, sizeCoefficient = 1):
+def prepareCharging(zNodes, sizeOfMatrixCoeff):
 
     # Matrix of coefficients
-    coefficients = [[0 for _ in range((zNodes)*sizeCoefficient)] for _ in range((zNodes)*sizeCoefficient)]
+    coefficients = [[0 for _ in range((zNodes*sizeOfMatrixCoeff))]
+                    for _ in range((zNodes*sizeOfMatrixCoeff))]
     # Matrix of constants
-    constants = [0 for _ in range((zNodes))*sizeCoefficient]
+    constants = [0 for _ in range((zNodes*sizeOfMatrixCoeff))]
 
     return coefficients, constants
-
 
 
 def prepareStoring(rNodes, insulationNodes):
@@ -14,18 +14,18 @@ def prepareStoring(rNodes, insulationNodes):
     numOfNodes = rNodes + insulationNodes
 
     # Matrix of coefficients for the storing process
-    coefficients = [[0 for _ in range(
-        numOfNodes)] for _ in range(numOfNodes)]
+    coefficients = [[0 for _ in range(numOfNodes)] for _ in range(numOfNodes)]
     # Array of constants for the storing process
     constants = [0 for _ in range(numOfNodes)]
 
     return coefficients, constants
 
 
-def temperatures(zNodes, rNodes, temperature, sizeCoefficient = 1):
+def temperatures(zNodes, rNodes, temperature, sizeOfMatrixCoeff):
 
     # An array of all initial temperatures in the storage
-    initTemperatures = [[temperature for _ in range(zNodes)*sizeCoefficient] for _ in range(rNodes)]
+    initTemperatures = [[temperature for _ in range(
+        zNodes*sizeOfMatrixCoeff)] for _ in range(rNodes)]
 
     return initTemperatures
 

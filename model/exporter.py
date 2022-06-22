@@ -1,19 +1,4 @@
 import os
-from singlePhaseModel import mapping
-
-
-class Count:
-    counter = 0
-
-    def time(deltaTime):
-        Count.counter += deltaTime
-        Count.counter = round(Count.counter, 3)
-
-        return Count.counter
-
-    def endCount():
-        return Count.counter
-
 
 def getDirectoryName(directory):
     # Change to specified directory
@@ -31,83 +16,88 @@ def getDirectoryName(directory):
 
 class Export:
 
-    def __init__(self, directory, length, radius, insulation):
+    def __init__(self, directory, model, mappingFile, length, radius, insulation, sizeCoefficient=1):
         self.directory = directory
+        self.model = model
+        self.mappingFile = mappingFile
         self.length = length
         self.radius = radius
         self.insulation = insulation
-
-    def fileName(self, fileName):
-        return os.path.join(self.directory, fileName)
+        self.sizeCoefficient = sizeCoefficient
 
     def initialTemperatures(self, tempList):
 
         # Open a file to append to:
-        with open(f"{self.directory}/single-phase.csv", "a") as file:
+        with open(f"{self.directory}/{self.model}.csv", "a") as file:
             file.write("Initial temperatures\n")
             # Export the initial temperatures first
-            file.write("t = 0.0 s\nr(m)|z(m),")
-            for dz in range(0, len(tempList[0])):
-                file.write(f"{dz*self.length/(len(tempList[0])-1)},")
+            file.write("t = 0s|0h\nr(m)|z(m),")
+            
+            # Values for storage length
+            for dz in range(0, round(len(tempList[0])/self.sizeCoefficient)):
+                file.write(f"{dz*self.length/(len(tempList[0])/self.sizeCoefficient-1)},")
             file.write("\n")
+
+            # Temperature values and radius length
             for array in range(len(tempList)):
                 file.write(f"{round(array*self.radius/(len(tempList)-1), 2)},")
-                for number in tempList[array]:
-                    file.write("{:.2f},".format(number))
+                for i in range(round(len(tempList[array])/self.sizeCoefficient)):
+                    file.write("{:.2f},".format(tempList[array][i]))
                 file.write("\n")
             file.write("\n")
 
     def allTemperatures(self, message, tempList, keepCount):
 
         # Open a file to append to:
-        with open(f"{self.directory}/single-phase.csv", "a") as file:
+        with open(f"{self.directory}/{self.model}.csv", "a") as file:
             # Write into the file
             file.write(f"{message}\n")
             file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
             file.write("r(m)|z(m),")
-            for dz in range(0, len(tempList[0])):
-                file.write(f"{dz*self.length/(len(tempList[0])-1)},")
+
+            for dz in range(round(len(tempList[0])/self.sizeCoefficient)):
+                file.write(f"{round(dz*self.length/(len(tempList[0])/self.sizeCoefficient-1), 3)},")
             file.write("\n")
 
             for array in range(len(tempList)):
                 dimension = self.radius - self.radius*array/(len(tempList)-1)
                 file.write(f"{round(dimension, 2)},")
-                for number in tempList[array]:
-                    file.write("{:.2f},".format(number))
+                for i in range(round(len(tempList[array])/self.sizeCoefficient)):
+                    file.write("{:.2f},".format(tempList[array][i]))
                 file.write("\n")
             file.write("\n")
 
     # Export during the storing process and exclude insulation temperatures
     def allStoringTemperatures(self, tempList, insulationNodes, keepCount):
 
-        with open(f"{self.directory}/single-phase.csv", "a") as file:
+        with open(f"{self.directory}/{self.model}.csv", "a") as file:
             file.write("Storing\n")
-            file.write("t = {}s|{}h\n".format(
-                keepCount, round(keepCount/3600, 2)))
+            file.write("t = {}s|{}h\n".format(keepCount, round(keepCount/3600, 2)))
 
-            mappedList = mapping.radiusToLength(tempList)
-            file.write("r(m)|z(m),")
-            for dz in range(0, len(mappedList[0])):
-                file.write(f"{dz*self.length/(len(mappedList[0])-1)},")
-            file.write("\n")
-            for array in range(0, len(mappedList)):
-                dimension = (self.radius + self.insulation)*(1-(array)/(len(mappedList)-1))
-                file.write(f"{round(dimension, 2)},")
-                for number in mappedList[array]:
-                    file.write("{:.2f},".format(number))
-                file.write("\n")
-            file.write("\n")
+            mappedList = self.mappingFile.radiusToLength(tempList)
             # file.write("r(m)|z(m),")
             # for dz in range(0, len(mappedList[0])):
             #     file.write(f"{dz*self.length/(len(mappedList[0])-1)},")
             # file.write("\n")
-            # for array in range(insulationNodes, len(mappedList)):
-            #     dimension = self.radius*(1-(array-insulationNodes)/(len(mappedList)-1-insulationNodes))
+            # for array in range(0, len(mappedList)):
+            #     dimension = (self.radius + self.insulation)*(1-(array)/(len(mappedList)-1))
             #     file.write(f"{round(dimension, 2)},")
             #     for number in mappedList[array]:
-            #         file.write("{:.2f}".format(number) + ",")
+            #         file.write("{:.2f},".format(number))
             #     file.write("\n")
             # file.write("\n")
+            file.write("r(m)|z(m),")
+            for dz in range(round(len(mappedList[0])/self.sizeCoefficient)):
+                file.write(f"{round(dz*self.length/(len(mappedList[0])/self.sizeCoefficient-1), 3)},")
+            file.write("\n")
+
+            for array in range(insulationNodes, len(mappedList)):
+                dimension = self.radius*(1-(array-insulationNodes)/(len(mappedList)-1-insulationNodes))
+                file.write(f"{round(dimension, 2)},")
+                for i in range(round(len(mappedList[array])/self.sizeCoefficient)):
+                    file.write("{:.2f},".format(mappedList[array][i]))
+                file.write("\n")
+            file.write("\n")
 
     # Izvozimo shranjeno toploto med polnjenjem
     def heatStored(self, tempList, tempInitial, cp, keepCount):
@@ -127,7 +117,7 @@ class Export:
     def heatStoredStoring(self, tempList, tempInitial, insulationNodes, cp, keepCount):
 
         tempDifferenceList = []
-        mappedList = mapping.radiusToLength(tempList)
+        mappedList = self.mappingFile.radiusToLength(tempList)
 
         for index in range(len(mappedList)):
             for temperature in mappedList[index]:

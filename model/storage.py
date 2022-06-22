@@ -1,85 +1,103 @@
 import numpy as np
 import initialize as init
-import singlePhaseModel.mapping as mapp
 from importer import *
-from exporter import Count
+from pandas import DataFrame
 
 class Storage:
 
-    def __init__(self, temperatureList, exportFile):
-        self.temperatureList = temperatureList
-        self.exportFile = exportFile
+    counter = 0
 
-    def outputCurrentTemperatures(self):
+    def __init__(self, arrayFile, mappingFile, exportFile, temperatureList, sizeOfMatrixCoeff=1):
+        self.arrayFile = arrayFile
+        self.mappingFile = mappingFile
+        self.exportFile = exportFile
+        self.temperatureList = temperatureList
+        self.sizeOfMatrixCoeff = sizeOfMatrixCoeff
+
+    def returnTemperatures(self):
         return self.temperatureList
 
-    # Tukaj je definicija procesa, lahko je polnjenje, hranjenje ali praznjenje
-    def process(self, process, processArray, outerTemperature):
+    def time(self, deltaTime):
+        self.counter += deltaTime
+        self.counter = round(self.counter, 3)
+        return self.counter
 
-        match process:
-            case "Charging":
-                self.temperatureList = init.temperatures(zNodes, rNodes, ambientTemp)
-                coefficients, constants = init.prepareCharging(zNodes)
-                difference = abs(outerTemperature - self.temperatureList[0][-1])
+    def endCount(self):
+        return self.counter
 
-            case "Storing":
-                self.temperatureList = mapp.lengthToRadius(self.temperatureList)
-                self.temperatureList = init.makeInsulation(self.temperatureList, ambientTemp, rNodesIns)
-                coefficients, constants = init.prepareStoring(rNodes, rNodesIns)
-                difference = abs(outerTemperature - self.temperatureList[-1][0])
+    def calculateTemperatures(self, process, newList, coeffMatrix):
+        for array in self.temperatureList:
+            constArray = process(self.sizeOfMatrixCoeff).constArray(array)
+            temperature = np.linalg.solve(coeffMatrix, constArray)
+            temperature = temperature.tolist()
+            newList.append(temperature)
 
-            case "Discharging":
-                self.temperatureList = mapp.radiusToLength(self.temperatureList)
-                coefficients, constants = init.prepareCharging(zNodes)
-                difference = abs(outerTemperature - self.temperatureList[-1][0])
+    def charge(self, outerTemperature, exportObj):
+        self.temperatureList = init.temperatures(zNodes, rNodes, Tambient, self.sizeOfMatrixCoeff)
+        exportObj.initialTemperatures(self.temperatureList)
+        difference = abs(outerTemperature - self.temperatureList[0][-1])
 
-            case _:
-                raise Exception("This is not a valid process, check the syntax.")
-
+        coeffMatrix = self.arrayFile.ChargingArray(self.sizeOfMatrixCoeff).coeffMatrix()
+        initialCount = self.endCount()
         currentTempList = []
-        coeffMatrix = processArray(coefficients, constants).coeffMatrix()
-        initialCount = Count.endCount()
 
-        # Zanka, ki se izvaja dokler ni razlika med točko v hranilniku in zunanjo točko manjša od 200°C
         while difference >= finalDifference:
-            for array in self.temperatureList:
-                constArray = processArray(coefficients, constants).constArray(array)
-                temperature = np.linalg.solve(coeffMatrix, constArray)
-                temperature = temperature.tolist()
-                currentTempList.append(temperature)
+            self.calculateTemperatures(self.arrayFile.ChargingArray, currentTempList, coeffMatrix)
+            keepCount = self.time(dt)
 
-            match process:
-                case ("Discharging"):
-                    keepCount = Count.time(dt)
-                    # Dont export every time, but when determined by exportDt
-                    if (keepCount - initialCount) % exportDtCharging == 0:
-                        self.exportFile.allTemperatures(process, currentTempList, keepCount)
-
-                case "Charging":
-                    keepCount = Count.time(dt)
-                    # Dont export every time, but when determined by exportDt
-                    if (keepCount - initialCount) % exportDtCharging == 0:
-                        self.exportFile.allTemperatures(process, currentTempList, keepCount)
-                        self.exportFile.heatStored(currentTempList, ambientTemp, cp, keepCount)
-
-                case "Storing":
-                    keepCount = Count.time(dtStore)
-                    if (keepCount - initialCount) % exportDtStoring == 0:
-                        self.exportFile.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
-                        self.exportFile.heatStoredStoring(currentTempList, ambientTemp, rNodesIns, cp, keepCount)
+            if (keepCount - initialCount) % exportDtCharging == 0:
+                self.exportFile.allTemperatures("Charging", currentTempList, keepCount)
+                # self.exportFile.heatStored(currentTempList, Tambient, cp, keepCount)
 
             self.temperatureList = list(currentTempList)
             currentTempList = []
+            difference = abs(outerTemperature - self.temperatureList[0][-1])
 
-            # Če je razlika manjša, se bo zanka končala
-            match process:
-                case "Charging":
-                    difference = abs(outerTemperature - self.temperatureList[0][-1])
-                case ("Storing" | "Discharging"):
-                    difference = abs(outerTemperature - self.temperatureList[-1][0])
+        return self.temperatureList
 
-        if process == "Storing":
-            self.temperatureList = init.delInsulation(self.temperatureList, rNodesIns)
-        print(".")
+
+    def store(self, outerTemperature):
+        self.temperatureList = self.mappingFile.lengthToRadius(self.temperatureList)
+        self.temperatureList = init.makeInsulation(self.temperatureList, Tambient, rNodesIns)
+        difference = abs(outerTemperature - self.temperatureList[-1][0])
+
+        coeffMatrix = self.arrayFile.StoringArray(self.sizeOfMatrixCoeff).coeffMatrix()
+        initialCount = self.endCount()
+        currentTempList = []
+
+        # Zanka, ki se izvaja dokler ni razlika med točko v hranilniku in zunanjo točko manjša od 200°C
+        while difference >= finalDifference:
+            self.calculateTemperatures(self.arrayFile.StoringArray, currentTempList, coeffMatrix)
+            keepCount = self.time(dtStore)
+
+            if (keepCount - initialCount) % exportDtStoring == 0:
+                self.exportFile.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
+                # self.exportFile.heatStoredStoring(currentTempList, Tambient, rNodesIns, cp, keepCount)
+
+            self.temperatureList = list(currentTempList)
+            currentTempList = []
+            difference = abs(outerTemperature - self.temperatureList[-1][0])
+        
+        self.temperatureList = init.delInsulation(self.temperatureList, rNodesIns)
+        self.temperatureList = self.mappingFile.radiusToLength(self.temperatureList)
+        return self.temperatureList
+
+
+    def discharge(self, outerTemperature):
+        difference = abs(outerTemperature - self.temperatureList[-1][0])
+        coeffMatrix = self.arrayFile.DischargingArray(self.sizeOfMatrixCoeff).coeffMatrix()
+        currentTempList = []
+        initialCount = self.endCount()
+
+        while difference >= 50:
+            self.calculateTemperatures(self.arrayFile.DischargingArray, currentTempList, coeffMatrix)
+            keepCount = self.time(dt)
+
+            if (keepCount - initialCount) % exportDtCharging == 0:
+                self.exportFile.allTemperatures("Discharging", currentTempList, keepCount)
+
+            self.temperatureList = list(currentTempList)
+            currentTempList = []
+            difference = abs(outerTemperature - self.temperatureList[-1][0])
 
         return self.temperatureList

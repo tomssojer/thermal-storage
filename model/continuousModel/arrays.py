@@ -1,208 +1,228 @@
+from importer import *
+import initialize as init
 import os
 import sys
 import inspect
-
-from numpy import void
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from importer import *
-
 class ChargingArray:
 
-    def __init__(self, coefficients, constants):
-        self.coefficients = coefficients
-        self.constants = constants
+    def __init__(self, sizeOfMatrixCoeff):
+        self.sizeOfMatrixCoeff = sizeOfMatrixCoeff
 
     def coeffMatrix(self):
+        coefficients = init.prepareCharging(zNodes, self.sizeOfMatrixCoeff)[0]
 
-        wholeArray = 2*len(self.coefficients)
-        halfArray = len(self.coefficients)
+        wholeArray = len(coefficients)
+        halfArray = round(wholeArray/2)
 
         # Solid - 1. robni pogoj
-        self.coefficients[0][0] = (1-voidFrac)*rhoStorage*cStorage*dz** + ks*dt + h*A*dt*dz**2
-        self.coefficients[0][1] = -ks*dt
-        self.coefficients[0][halfArray] = -2*h*A*dt*dz**2
+        coefficients[0][0] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + ks*dt + h*A*dt*dz**2
+        coefficients[0][1] = -ks*dt
+        coefficients[0][halfArray] = -h*A*dt*dz**2
 
         # Solid - vmesne enačbe
         for i in range(1, halfArray-1):
-            self.coefficients[i][i-1] = -ks*dt
-            self.coefficients[i][i] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt + h*A*dt*dz**2
-            self.coefficients[i][i+1] = -ks*dt
-            self.coefficients[i][halfArray+1] = h*A*dt*dz**2
+            coefficients[i][i-1] = -ks*dt
+            coefficients[i][i] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt + h*A*dt*dz**2
+            coefficients[i][i+1] = -ks*dt
+            coefficients[i][halfArray+i] = -h*A*dt*dz**2
 
         # Solid - 2. robni pogoj
-        self.coefficients[halfArray-1][halfArray-2] = -ks*dt
-        self.coefficients[halfArray-1][halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt + h*A*dt*dz**2
-        self.coefficients[halfArray-1][halfArray] = -ks*dt
-        self.coefficients[halfArray-1][0] = -h*A*dt*dz**2
+        coefficients[halfArray-1][halfArray-2] = -ks*dt
+        coefficients[halfArray-1][halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + ks*dt + h*A*dt*dz**2
+        coefficients[halfArray-1][wholeArray-1] = -h*A*dt*dz**2
 
         # Fluid - 1. robni pogoj
-        self.coefficients[halfArray][0] = 2*h*A*dt*dz**2
-        self.coefficients[halfArray][halfArray] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
-        self.coefficients[halfArray][halfArray+1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+        coefficients[halfArray][0] = -2*h*A*dt*dz**2
+        coefficients[halfArray][halfArray] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
+        coefficients[halfArray][halfArray+1] = +voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt # -
 
         # Fluid - vmesne enačbe
         for i in range(halfArray+1, wholeArray-1):
-            self.coefficients[i][i-halfArray+1] = -2*h*A*dt*dz**2
-            self.coefficients[i][i-1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
-            self.coefficients[i][i] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
-            self.coefficients[i][i+1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+            coefficients[i][i-halfArray] = -2*h*A*dt*dz**2
+            coefficients[i][i-1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt # +
+            coefficients[i][i] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt + 2*h*A*dt*dz**2
+            coefficients[i][i+1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt # -
 
         # Fluid - 2. robni pogoj
-        self.coefficients[wholeArray-1][halfArray-1] = -h*A*dt*dz**2
-        self.coefficients[wholeArray-1][wholeArray-2] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - kf*dt
-        self.coefficients[wholeArray-1][wholeArray-1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz + kf*dt + h*A*dt*dz**2
+        coefficients[wholeArray-1][halfArray-1] = -h*A*dt*dz**2
+        coefficients[wholeArray-1][wholeArray-2] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - kf*dt # +
+        coefficients[wholeArray-1][wholeArray-1] = voidFrac*rhoGas*cGas*dz**2 + voidFrac*rhoGas*cGas*flowVelocity*dt*dz + kf*dt + h*A*dt*dz**2 # -
 
-        return self.coefficients
+        return coefficients
 
-    def constArray(self, solidPreviousTempList, fluidPreviousTempList):
+    def constArray(self, temperatureList):
+        constants = init.prepareCharging(zNodes, self.sizeOfMatrixCoeff)[1]
 
-        wholeArray = 2*len(self.coefficients)
-        halfArray = len(self.coefficients)
+        wholeArray = len(constants)
+        halfArray = round(wholeArray/2)
 
-        # Solid - 1. robni pogoj
-        self.constants[0] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[0]
-
-        # Solid - vmesne enačbe
-        for i in range(1, halfArray-1):
-            self.constants[i] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[i]
-
-        # Solid - 2. robni pogoj
-        self.constants[halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2*solidPreviousTempList[halfArray-1]
+        # Solid - vmesne enačbe in oba robna pogoja
+        for i in range(0, halfArray):
+            constants[i] = (1-voidFrac)*rhoStorage*cStorage*dz**2*temperatureList[i]
 
         # Fluid - 1. robni pogoj
-        self.constants[halfArray] = (-voidFrac*rhoGas*cGas*flowVelocity*dt*dz+2*kf*dt)*Tfluid + 2*voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[0]
+        constants[halfArray] = (voidFrac*rhoGas*cGas*flowVelocity*dt*dz + 2*kf*dt)*Tfluid + 2*voidFrac*rhoGas*cGas*dz**2*temperatureList[halfArray] # -
 
         # Fluid - vmesne enačbe
         for i in range(halfArray+1, wholeArray-1):
-            self.constants[i] = 2*voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[i]
+            constants[i] = 2*voidFrac*rhoGas*cGas*dz**2*temperatureList[i]
 
         # Fluid - 2. robni pogoj
-        self.constants[wholeArray-1] = voidFrac*rhoGas*cGas*dz**2*fluidPreviousTempList[wholeArray-1]
+        constants[wholeArray-1] = voidFrac*rhoGas*cGas*dz**2*temperatureList[wholeArray-1]
 
-        return self.constants
+        return constants
 
 
 class StoringArray():
 
-    def __init__(self, coefficients, constants):
-        self.coefficients = coefficients
-        self.constants = constants
+    def __init__(self, sizeOfMatrixCoeff = 1):
+        self.sizeOfMatrixCoeff = sizeOfMatrixCoeff
 
     def coeffMatrix(self):
+        coefficients = init.prepareStoring(rNodes, rNodesIns)[0]
+
         # Coefficients at the inner boundary
-        self.coefficients[0][0] = 4*k/dr**2 + thermalMass/dt
-        self.coefficients[0][1] = -4*k/dr**2
+        coefficients[0][0] = 4*k*dtStore + thermalMass*(dr**2)
+        coefficients[0][1] = -4*k*dtStore
 
         # Coefficients in the storage
         for j in range(1, rNodes - 1):
-            self.coefficients[j][j-1] = (1/(2*j) - 1)*k/dr**2
-            self.coefficients[j][j] = 2*k/dr**2 + thermalMass/dt
-            self.coefficients[j][j+1] = -(1/(2*j) - 1)*k/dr**2
+            coefficients[j][j-1] = -k*dtStore - 2*k*dtStore*j
+            coefficients[j][j] = 4*k*dtStore*j + 2*thermalMass*(dr**2)*j
+            coefficients[j][j+1] = k*dtStore - 2*k*dtStore*j
 
-        # Coefficients at the storage/insulation boundary
-        # Lets define coefficients so the lines won't be too long
-        K = ((rNodes - 3/2)*thermalMass + (rNodes - 1/2)
-            * rhoIns*cIns)/(2*(rNodes - 1)*dt)
-        Khr = k/(2*dr**2*(rNodes - 1)) + k/dr**2
-        Kins = kIns/(2*drIns**2*(rNodesIns - 1)) + kIns/drIns**2
-        self.coefficients[rNodes-1][rNodes-2] = -Khr
-        self.coefficients[rNodes-1][rNodes-1] = Kins - \
-            k/(2*dr**2*(rNodes - 1)) + k/dr**2 - K
-        self.coefficients[rNodes-1][rNodes] = -Kins
+        if drIns > 0:
+            # Coefficients at the storage/insulation boundary
+            # K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            K = thermalMass*(rNodes-1)*2
+            K1 = 2*(rNodes - 1)
+            kBoth = k*kIns/(k+kIns)
+            coefficients[rNodes-1][rNodes-2] = (-1 - K1)*kBoth*dtStore
+            coefficients[rNodes-1][rNodes-1] = kBoth*dtStore - kBoth*dtStore + K1*dtStore*kBoth + K1*dtStore*kBoth + K*(dr**2)
+            coefficients[rNodes-1][rNodes] = (1 - K1)*kBoth*dtStore
 
-        # Coefficients in the insulation
-        for j in range(rNodes, rNodes + rNodesIns - 1):
-            self.coefficients[j][j-1] = (1/(2*j) - 1)*kIns/drIns**2
-            self.coefficients[j][j] = 2*kIns/drIns**2 + rhoIns*cIns/dt
-            self.coefficients[j][j+1] = -(1/(2*j) - 1)*kIns/drIns**2
+            # Coefficients in the insulation
+            for j in range(rNodes, rNodes + rNodesIns - 1):
+                coefficients[j][j-1] = -kIns*dtStore - 2*kIns*dtStore*j
+                coefficients[j][j] = 4*kIns*dtStore*j + 2*rhoIns*cIns*(drIns**2)*j
+                coefficients[j][j+1] = kIns*dtStore - 2*kIns*dtStore*j
 
-        # Coefficients at the outer boundary
-        Kambient = ambienth/(drIns*(rNodes+rNodesIns-1)) + ambienth/drIns
-        self.coefficients[-1][-2] = -kIns/drIns**2
-        self.coefficients[-1][-1] = Kambient + \
-            kIns/drIns**2 + rhoIns*cIns/(2*dt)
+            # Coefficients at the outer boundary
+            K2 = rNodes+rNodesIns-1
+            K3 = 2*hAmbient*drIns*dtStore
+            coefficients[-1][-2] = -2*kIns*dtStore*K2
+            coefficients[-1][-1] = K3 + 2*kIns*dtStore*K2 + K3*K2 + rhoIns*cIns*(drIns**2)*K2
 
-        return self.coefficients
+        elif drIns == 0:
+            K2 = rNodes-1
+            K3 = 2*hAmbient*dr*dtStore
+            coefficients[-1][-2] = -2*k*dtStore*K2
+            coefficients[-1][-1] = K3 + 2*k*dtStore*K2 + K3*K2 + thermalMass*(dr**2)*K2
+
+        return coefficients
 
     def constArray(self, previousTemperatures):
+        constants = init.prepareStoring(rNodes, rNodesIns)[1]
+
         # Constant at the inner boundary
-        self.constants[0] = thermalMass/dt*previousTemperatures[0]
+        constants[0] = thermalMass*(dr**2)*previousTemperatures[0]
 
         # Constants in the storage
         for j in range(1, rNodes - 1):
-            self.constants[j] = thermalMass/dt*previousTemperatures[j]
+            constants[j] = 2*thermalMass*(dr**2)*j*previousTemperatures[j]
 
-        # Constants at the storage/insulation boundary
-        K = ((rNodes - 3/2)*thermalMass + (rNodes - 1/2)
-            * rhoIns*cIns)/(2*(rNodes - 1)*dt)
-        self.constants[rNodes-1] = K*previousTemperatures[rNodes-1]
+        if drIns > 0:
+            # Constants at the storage/insulation boundary
+            # K = (rNodes - 3/2)*thermalMass + (rNodes - 1/2)*rhoIns*cIns
+            K = thermalMass*(rNodes-1)*2
+            constants[rNodes-1] = K*(dr**2)*previousTemperatures[rNodes-1]
 
-        # Constants in the insulation
-        for j in range(rNodes, rNodes + rNodesIns - 1):
-            self.constants[j] = thermalMass/dr*previousTemperatures[j]
+            # Constants in the insulation
+            for j in range(rNodes, rNodes + rNodesIns - 1):
+                constants[j] = 2*rhoIns*cIns*(drIns**2)*j*previousTemperatures[j]
 
-        # Constants at the outer boundary
-        Kambient = (ambienth/(drIns*(rNodes+rNodesIns-1)) +
-                    ambienth/drIns)*ambientTemp
-        self.constants[-1] = rhoIns*cIns / \
-            (2*dt)*previousTemperatures[-1] + Kambient
+            # Constants at the outer boundary
+            K = 2*hAmbient*drIns*dtStore
+            K1 = rNodes+rNodesIns-1
+            constants[-1] = (K*K1 + K)*Tambient + rhoIns*cIns*(drIns**2)*K1*previousTemperatures[-1]
 
-        return self.constants
+        elif drIns == 0:
+            K = 2*hAmbient*dr*dtStore
+            K1 = rNodes-1
+            constants[-1] = (K*K1 + K)*Tambient + thermalMass*(dr**2)*K1*previousTemperatures[-1]
+
+        return constants
 
 
 class DischargingArray:
 
-    def __init__(self, coefficients, constants):
-        self.coefficients = coefficients
-        self.constants = constants
+    def __init__(self, sizeOfMatrixCoeff):
+        self.sizeOfMatrixCoeff = sizeOfMatrixCoeff
 
     def coeffMatrix(self):
+        coefficients = init.prepareCharging(zNodes, self.sizeOfMatrixCoeff)[0]
 
-        arrLength = len(self.coefficients)
-        halfLength = int(arrLength/2)
+        wholeArray = len(coefficients)
+        halfArray = round(wholeArray/2)
 
-        self.coefficients[0][0] = voidFrac*rhoGas*cGas/dt + h*A
-        self.coefficients[0][1] = voidFrac*rhoGas*cGas*flowVelocity/(2*dz)
-        self.coefficients[0][halfLength] = -h*A
+        # Solid - 1. robni pogoj
+        coefficients[0][0] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + ks*dt - h*A*dt*dz**2
+        coefficients[0][1] = -ks*dt
+        coefficients[0][halfArray] = h*A*dt*dz**2
 
-        for i in range(1, halfLength-1):
-            self.coefficients[i][i-1] = -voidFrac*rhoGas*cGas*flowVelocity/(2*dz)
-            self.coefficients[i][i] = voidFrac*rhoGas*cGas/dt + h*A
-            self.coefficients[i][i+1] = voidFrac*rhoGas*cGas*flowVelocity/(2*dz)
-            self.coefficients[i][halfLength+i] = -h*A
+        # Solid - vmesne enačbe
+        for i in range(1, halfArray-1):
+            coefficients[i][i-1] = -ks*dt
+            coefficients[i][i] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + 2*ks*dt - h*A*dt*dz**2
+            coefficients[i][i+1] = -ks*dt
+            coefficients[i][halfArray+i] = h*A*dt*dz**2
 
-        self.coefficients[halfLength-1][halfLength-2] = - voidFrac*rhoGas*cGas*flowVelocity/dz
-        self.coefficients[halfLength-1][halfLength-1] = voidFrac*rhoGas*cGas/dt + voidFrac*rhoGas*cGas*flowVelocity/dz + h*A
-        self.coefficients[halfLength-1][arrLength-1] = -h*A
+        # Solid - 2. robni pogoj
+        coefficients[halfArray-1][halfArray-2] = -ks*dt
+        coefficients[halfArray-1][halfArray-1] = (1-voidFrac)*rhoStorage*cStorage*dz**2 + ks*dt - h*A*dt*dz**2
+        coefficients[halfArray-1][wholeArray-1] = h*A*dt*dz**2
 
-        for i in range(halfLength, arrLength):
-            self.coefficients[i][i] = (1-voidFrac)*rhoGas*cGas/dt + h*A
-        for i in range(1, halfLength+1):
-            self.coefficients[halfLength-1+i][i-1] = -h*A
+        # Fluid - 1. robni pogoj
+        coefficients[halfArray][0] = 2*h*A*dt*dz**2
+        coefficients[halfArray][halfArray] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt - 2*h*A*dt*dz**2
+        coefficients[halfArray][halfArray+1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
 
-        return self.coefficients
+        # Fluid - vmesne enačbe
+        for i in range(halfArray+1, wholeArray-1):
+            coefficients[i][i-halfArray] = 2*h*A*dt*dz**2
+            coefficients[i][i-1] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
+            coefficients[i][i] = 2*voidFrac*rhoGas*cGas*dz**2 + 4*kf*dt - 2*h*A*dt*dz**2
+            coefficients[i][i+1] = voidFrac*rhoGas*cGas*flowVelocity*dt*dz - 2*kf*dt
 
-    def constArray(self, previousTempList):
+        # Fluid - 2. robni pogoj
+        coefficients[wholeArray-1][halfArray-1] = h*A*dt*dz**2
+        coefficients[wholeArray-1][wholeArray-2] = -voidFrac*rhoGas*cGas*flowVelocity*dt*dz - kf*dt
+        coefficients[wholeArray-1][wholeArray-1] = voidFrac*rhoGas*cGas*dz**2 + voidFrac*rhoGas*cGas*flowVelocity*dt*dz + kf*dt - h*A*dt*dz**2
 
-        arrLength = len(self.coefficients)
-        halfLength = int(arrLength/2)
+        return coefficients
 
-        self.constants[2] = voidFrac*rhoGas*cGas*flowVelocity/(2*dz)*Tfluid + voidFrac*rhoGas*cGas/dt*previousTempList[1]
+    def constArray(self, temperatureList):
+        constants = init.prepareCharging(zNodes, self.sizeOfMatrixCoeff)[1]
 
-        for i in range(1, halfLength):
-            self.constants[i] = voidFrac*rhoGas*cGas/dt*previousTempList[i]
+        wholeArray = len(constants)
+        halfArray = round(wholeArray/2)
 
-        for i in range(halfLength, arrLength):
-            self.constants[i] = (1 - voidFrac)*rhoGas*cGas/dt*previousTempList[i]
+        # Solid - vmesne enačbe in oba robna pogoja
+        for i in range(0, halfArray):
+            constants[i] = (1-voidFrac)*rhoStorage*cStorage*dz**2*temperatureList[i]
 
-        return self.constants
+        # Fluid - 1. robni pogoj
+        constants[halfArray] = (voidFrac*rhoGas*cGas*flowVelocity*dt*dz + 2*kf*dt)*Tambient + 2*voidFrac*rhoGas*cGas*dz**2*temperatureList[halfArray]
 
-# coefficients = [[0 for i in range(10)] for i in range(10)]
-# constants = [0 for i in range(10)]
-# from pandas import DataFrame
-# a = ChargingArray(coefficients, constants).coeffMatrix()
-# print(DataFrame(a))
+        # Fluid - vmesne enačbe
+        for i in range(halfArray+1, wholeArray-1):
+            constants[i] = 2*voidFrac*rhoGas*cGas*dz**2*temperatureList[i]
+
+        # Fluid - 2. robni pogoj
+        constants[wholeArray-1] = voidFrac*rhoGas*cGas*dz**2*temperatureList[wholeArray-1]
+
+        return constants
