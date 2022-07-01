@@ -1,10 +1,13 @@
 import os
-from importer import length, radius, insulation, Tfluid, Tambient
+from importer import Properties
 from storage import Storage
-import singlePhaseModel.arrays, continuousModel.arrays
-import singlePhaseModel.mapping, continuousModel.mapping
 from exporter import getDirectoryName, Export
+from modules import mapContinuous, mapSinglePhase
+from matrix import singlePhaseCharging, singlePhaseDischarging
+from matrix import continuousCharging, continuousDischarging
+from matrix import storing
 
+# Create a log directory and directory in which we will export data
 rootDirectory = os.getcwd()
 logDirectory = os.path.join(rootDirectory, r'logs')
 if not os.path.exists(logDirectory):
@@ -12,15 +15,23 @@ if not os.path.exists(logDirectory):
 
 exportDir = getDirectoryName(logDirectory)
 
-# Kličemo storage class - objekt storageSinglePhase (povemo kateri arrayi so uporabljeni, katero datoteko izvozimo)
-exportSinglePhase = Export(exportDir, "single-phase-model", singlePhaseModel.mapping, length, radius, insulation)
-objectSinglePhase = Storage(singlePhaseModel.arrays, singlePhaseModel.mapping, exportSinglePhase, [])
-objectSinglePhase.charge(Tfluid, exportSinglePhase)
-objectSinglePhase.store(Tambient)
-objectSinglePhase.discharge(Tambient)
+props = Properties()
 
-exportContinuous = Export(exportDir, "continuous-model", continuousModel.mapping, length, radius, insulation, 2)
-objectContinuous = Storage(continuousModel.arrays, continuousModel.mapping, exportContinuous, [], 2)
-objectContinuous.charge(Tfluid, exportContinuous)
-objectContinuous.store(Tambient)
-objectContinuous.discharge(Tambient)
+while props.simulationId:
+    props.getProperties()
+    props.discretization()
+    props.calculatedCoefficients()
+
+    exportSinglePhase = Export(props, exportDir, f"{props.simulationId}-single-phase-model", mapSinglePhase)
+    objectSinglePhase = Storage(props, mapSinglePhase, exportSinglePhase, [])
+    objectSinglePhase.charge(singlePhaseCharging, props.Tfluid, exportSinglePhase)
+    objectSinglePhase.store(storing, props.Tambient)
+    objectSinglePhase.discharge(singlePhaseDischarging, props.Tambient)
+
+    exportContinuous = Export(props, exportDir, f"{props.simulationId}-continuous-model", mapContinuous, 2)
+    objectContinuous = Storage(props, mapContinuous, exportContinuous, [], 2)
+    objectContinuous.charge(continuousCharging, props.Tfluid, exportContinuous)
+    objectContinuous.store(storing, props.Tambient)
+    objectContinuous.discharge(continuousDischarging, props.Tambient)
+
+    props.getNextId()

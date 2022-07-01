@@ -1,6 +1,3 @@
-from pandas import DataFrame
-
-
 def lengthToRadius(oldList):
 
     newList = list(zip(*(oldList[::-1])))

@@ -1,14 +1,13 @@
 import numpy as np
-import initialize as init
+from modules import initialize as init
 from importer import *
-from pandas import DataFrame
 
 class Storage:
 
     counter = 0
 
-    def __init__(self, arrayFile, mappingFile, exportFile, temperatureList, sizeOfMatrixCoeff=1):
-        self.arrayFile = arrayFile
+    def __init__(self, propsObj, mappingFile, exportFile, temperatureList, sizeOfMatrixCoeff=1):
+        self.propsObj = propsObj
         self.mappingFile = mappingFile
         self.exportFile = exportFile
         self.temperatureList = temperatureList
@@ -25,79 +24,68 @@ class Storage:
     def endCount(self):
         return self.counter
 
-    def calculateTemperatures(self, process, newList, coeffMatrix):
-        for array in self.temperatureList:
-            constArray = process(self.sizeOfMatrixCoeff).constArray(array)
+    def calculateTemperatures(self, process):
+
+        newList = []
+
+        for subList in self.temperatureList:
+            coeffMatrix = process.GetArrays(subList, self.sizeOfMatrixCoeff).coeffMatrix(self.propsObj)
+            constArray = process.GetArrays(subList, self.sizeOfMatrixCoeff).constArray(self.propsObj, subList)
             temperature = np.linalg.solve(coeffMatrix, constArray)
             temperature = temperature.tolist()
             newList.append(temperature)
+        
+        return newList
 
-    def charge(self, outerTemperature, exportObj):
-        self.temperatureList = init.temperatures(zNodes, rNodes, Tambient, self.sizeOfMatrixCoeff)
+    def charge(self, arrayFile, outerTemperature, exportObj):
+        self.temperatureList = init.temperatures(self.propsObj.zNodes, self.propsObj.rNodes, self.propsObj.Tambient, self.sizeOfMatrixCoeff)
         exportObj.initialTemperatures(self.temperatureList)
+
         difference = abs(outerTemperature - self.temperatureList[0][-1])
-
-        coeffMatrix = self.arrayFile.ChargingArray(self.sizeOfMatrixCoeff).coeffMatrix()
         initialCount = self.endCount()
-        currentTempList = []
 
-        while difference >= finalDifference:
-            self.calculateTemperatures(self.arrayFile.ChargingArray, currentTempList, coeffMatrix)
-            keepCount = self.time(dt)
+        while difference >= self.propsObj.finalDifference:
+            self.temperatureList = self.calculateTemperatures(arrayFile)
+            countTime = self.time(self.propsObj.dt)
 
-            if (keepCount - initialCount) % exportDtCharging == 0:
-                self.exportFile.allTemperatures("Charging", currentTempList, keepCount)
-                # self.exportFile.heatStored(currentTempList, Tambient, cp, keepCount)
+            if (countTime - initialCount) % self.propsObj.exportDtCharging == 0:
+                self.exportFile.allTemperatures("Charging", self.temperatureList, countTime)
+                # self.exportFile.heatStored(currentTempList, Tambient, cp, countTime)
 
-            self.temperatureList = list(currentTempList)
-            currentTempList = []
             difference = abs(outerTemperature - self.temperatureList[0][-1])
 
-        return self.temperatureList
 
-
-    def store(self, outerTemperature):
+    def store(self, arrayFile, outerTemperature):
         self.temperatureList = self.mappingFile.lengthToRadius(self.temperatureList)
-        self.temperatureList = init.makeInsulation(self.temperatureList, Tambient, rNodesIns)
-        difference = abs(outerTemperature - self.temperatureList[-1][0])
+        self.temperatureList = init.makeInsulation(self.temperatureList, self.propsObj.Tambient, self.propsObj.rNodesIns)
 
-        coeffMatrix = self.arrayFile.StoringArray(self.sizeOfMatrixCoeff).coeffMatrix()
+        difference = abs(outerTemperature - self.temperatureList[-1][0])
         initialCount = self.endCount()
-        currentTempList = []
 
         # Zanka, ki se izvaja dokler ni razlika med točko v hranilniku in zunanjo točko manjša od 200°C
-        while difference >= finalDifference:
-            self.calculateTemperatures(self.arrayFile.StoringArray, currentTempList, coeffMatrix)
-            keepCount = self.time(dtStore)
+        while difference >= self.propsObj.finalDifference:
+            self.temperatureList = self.calculateTemperatures(arrayFile)
+            countTime = self.time(self.propsObj.dtStore)
 
-            if (keepCount - initialCount) % exportDtStoring == 0:
-                self.exportFile.allStoringTemperatures(currentTempList, rNodesIns, keepCount)
-                # self.exportFile.heatStoredStoring(currentTempList, Tambient, rNodesIns, cp, keepCount)
+            if (countTime - initialCount) % self.propsObj.exportDtStoring == 0:
+                self.exportFile.allStoringTemperatures(self.temperatureList, self.propsObj.rNodesIns, countTime)
+                # self.exportFile.heatStoredStoring(currentTempList, Tambient, rNodesIns, cp, countTime)
 
-            self.temperatureList = list(currentTempList)
-            currentTempList = []
             difference = abs(outerTemperature - self.temperatureList[-1][0])
         
-        self.temperatureList = init.delInsulation(self.temperatureList, rNodesIns)
+        self.temperatureList = init.delInsulation(self.temperatureList, self.propsObj.rNodesIns)
         self.temperatureList = self.mappingFile.radiusToLength(self.temperatureList)
-        return self.temperatureList
 
 
-    def discharge(self, outerTemperature):
+    def discharge(self, arrayFile, outerTemperature):
         difference = abs(outerTemperature - self.temperatureList[-1][0])
-        coeffMatrix = self.arrayFile.DischargingArray(self.sizeOfMatrixCoeff).coeffMatrix()
-        currentTempList = []
         initialCount = self.endCount()
 
         while difference >= 50:
-            self.calculateTemperatures(self.arrayFile.DischargingArray, currentTempList, coeffMatrix)
-            keepCount = self.time(dt)
+            self.temperatureList = self.calculateTemperatures(arrayFile)
+            countTime = self.time(self.propsObj.dt)
 
-            if (keepCount - initialCount) % exportDtCharging == 0:
-                self.exportFile.allTemperatures("Discharging", currentTempList, keepCount)
+            if (countTime - initialCount) % self.propsObj.exportDtCharging == 0:
+                self.exportFile.allTemperatures("Discharging", self.temperatureList, countTime)
 
-            self.temperatureList = list(currentTempList)
-            currentTempList = []
             difference = abs(outerTemperature - self.temperatureList[-1][0])
-
-        return self.temperatureList
