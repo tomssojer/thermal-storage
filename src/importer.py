@@ -1,12 +1,14 @@
 import sys
 import csv
+import constants
 
 class Properties:
 
     simulationId = 1
+    simulationCount = 1
     
     def getNextId(self):
-        with open("../data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+        with open(f"{constants.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.DictReader(csvFile)
 
             # Do this until row doesn't return anything, check the next row if it exists
@@ -17,8 +19,16 @@ class Properties:
 
         self.simulationId = None
 
+    def progressOfSimulations(self):
+        with open(f"{constants.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+            allRows = csv.reader(csvFile)
+            allSimulations = 2*(sum(1 for _ in allRows) - 1)
+
+            print(f"{self.simulationCount}/{allSimulations} done")
+            self.simulationCount += 1
+
     def getProperties(self):
-        with open("../data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+        with open(f"{constants.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.DictReader(csvFile)
 
             for row in allRows:

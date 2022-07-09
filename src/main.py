@@ -1,4 +1,5 @@
 import os
+import constants
 from importer import Properties
 from storage import Storage
 from exporter import getDirectoryName, Export
@@ -7,13 +8,9 @@ from matrix import singlePhaseCharging, singlePhaseDischarging
 from matrix import continuousCharging, continuousDischarging
 from matrix import storing
 
-# Create a log directory and directory in which we will export data
-rootDirectory = os.getcwd()
-logDirectory = os.path.join(rootDirectory, r'logs')
-if not os.path.exists(logDirectory):
-    os.makedirs(logDirectory)
-
-exportDir = getDirectoryName(logDirectory)
+if not os.path.exists(constants.LOG_DIRECTORY_PATH):
+    os.makedirs(constants.LOG_DIRECTORY_PATH)
+exportDir = getDirectoryName(constants.LOG_DIRECTORY_PATH)
 
 props = Properties()
 
@@ -27,11 +24,13 @@ while props.simulationId:
     objectSinglePhase.charge(singlePhaseCharging, props.Tfluid, exportSinglePhase)
     objectSinglePhase.store(storing, props.Tambient)
     objectSinglePhase.discharge(singlePhaseDischarging, props.Tambient)
+    props.progressOfSimulations()
 
     exportContinuous = Export(props, exportDir, f"{props.simulationId}-continuous-model", mapContinuous, 2)
     objectContinuous = Storage(props, mapContinuous, exportContinuous, [], 2)
     objectContinuous.charge(continuousCharging, props.Tfluid, exportContinuous)
     objectContinuous.store(storing, props.Tambient)
     objectContinuous.discharge(continuousDischarging, props.Tambient)
+    props.progressOfSimulations()
 
     props.getNextId()

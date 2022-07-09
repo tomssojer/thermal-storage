@@ -1,7 +1,10 @@
+import constants
+
 # Extract data from materials files and return a list of lists
 def getListFromImportedFile(material, property):
     try:
-        with open(f"data/{material}/{property}.csv", "r", encoding='utf-8-sig') as openedFile:
+        path = f"{constants.ROOT_DIRECTORY}/data/{material}/{property}.csv"
+        with open(path, "r", encoding='utf-8-sig') as openedFile:
             lines = openedFile.readlines()
             values = []
             for line in lines:
