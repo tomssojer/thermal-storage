@@ -4,7 +4,7 @@ def getDirectoryName(directory):
     # Change to specified directory
     os.chdir(directory)
 
-    dirName = input("Directory to export: ")
+    dirName = input("Choose a name for the directory: ")
     dirPath = os.path.join(directory, dirName)
     try:
         os.mkdir(dirPath)

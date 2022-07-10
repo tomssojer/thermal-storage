@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-from properties import Node
+from getData import Node
 import modules.initialize as init
 
 class GetArrays:
