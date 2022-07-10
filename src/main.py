@@ -1,4 +1,5 @@
 import os
+import time
 import constants
 from importer import Properties
 from storage import Storage
@@ -7,6 +8,8 @@ from modules import mapContinuous, mapSinglePhase
 from matrix import singlePhaseCharging, singlePhaseDischarging
 from matrix import continuousCharging, continuousDischarging
 from matrix import storing
+
+startTime = time.time()
 
 if not os.path.exists(constants.LOG_DIRECTORY_PATH):
     os.makedirs(constants.LOG_DIRECTORY_PATH)
@@ -34,3 +37,6 @@ while props.simulationId:
     props.progressOfSimulations()
 
     props.getNextId()
+
+endTime = time.time()
+props.simulationTime(startTime, endTime)

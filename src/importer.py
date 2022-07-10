@@ -27,6 +27,15 @@ class Properties:
             print(f"{self.simulationCount}/{allSimulations} done")
             self.simulationCount += 1
 
+    def simulationTime(self, startTime, endTime):
+        difference = endTime - startTime
+        if difference >= 60 and difference < 3600:
+            print(f"Done in {round(difference/60, 1)} min")
+        elif difference < 60:
+            print(f"Done in {difference} s")
+        else:
+            print(f"Done in {round(difference/3600, 1)} h")
+
     def getProperties(self):
         with open(f"{constants.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.DictReader(csvFile)
