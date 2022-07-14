@@ -13,25 +13,14 @@ docker build -t IMAGE_NAME .
 ```
 ### 4. Run a container
 Based on the image, run a container with the image name. We export data and need to keep data from simulations, this is why we need to mount the directory from the host machine into the container (-v flag).
-
-On **Windows**
 ```
-docker run -it -v ${pwd}:/thermal-storage IMAGE_NAME
-```
-On **Linux/MacOS**
-```
-docker run -it -v "$(pwd)":/thermal-storage IMAGE_NAME
+docker run -it -v ${PWD}:/thermal-storage IMAGE_NAME
 ```
 ## Debugging
 ### Enter bash before running simulations
-On **Windows**
 ```
-docker run -it -v ${pwd}:/thermal-storage IMAGE_NAME bash
+docker run -it -v ${PWD}:/thermal-storage IMAGE_NAME bash
 ```
-On **Linux/MacOS**
-```
-docker run -it -v "$(pwd)":/thermal-storage IMAGE_NAME bash
-```
-`cd thermal-storage` to get into the directory in the container.
+`cd thermal-storage` to get into the directory in the container and run the main file with `python src/main.py`.
 
 
