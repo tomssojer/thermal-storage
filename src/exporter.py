@@ -1,3 +1,5 @@
+from getData import Node
+
 class Export:
 
     def __init__(self, propertiesObject, directory, model, mappingFile, sizeCoefficient=1):
@@ -53,7 +55,7 @@ class Export:
     def allStoringTemperatures(self, tempList, insulationNodes, countTime):
 
         with open(f"{self.directory}/{self.model}.csv", "a") as file:
-            file.write("Storing\n")
+            file.write("Storing process\n")
             file.write("t = {}s|{}h\n".format(countTime, round(countTime/3600, 2)))
 
             mappedList = self.mappingFile.radiusToLength(tempList)
@@ -81,34 +83,53 @@ class Export:
                 file.write("\n")
             file.write("\n")
 
+    def openFileForHeatStored(self, message):
+
+        with open(f"{self.directory}/{self.model}-heat-stored.csv", "a") as file:
+            file.write(f"\n{message},t(h)|Q/m(kJ/kg)\n\n")
+
     # Izvozimo shranjeno toploto med polnjenjem
-    def heatStored(self, tempList, tempInitial, cp, countTime):
+    def heatStored(self, temperatureList, temperatureInitial, countTime):
+
+        cpList = []
+        for subList in temperatureList:
+            fetchedCpList = Node(subList, self.propertiesObject).cpList()
+            for i in range(len(fetchedCpList)):
+                cpList.append(fetchedCpList[i])
+        cp = sum(cpList)/len(cpList)
 
         tempDifferenceList = []
-        for list in tempList:
-            for temperature in list:
-                tempAppend = temperature - tempInitial
-                tempDifferenceList.append(tempAppend)
+        for subList in temperatureList:
+            for temperature in subList:
+                tempDifferenceList.append(temperature - temperatureInitial)
+        dT = sum(tempDifferenceList)/len(tempDifferenceList)
 
-        heatPerKilo = cp*sum(tempDifferenceList)/len(tempDifferenceList)
+        heatPerKilo = cp*dT
 
-        with open(f"{self.directory}/heat-charging.csv", "a+") as file:
+        with open(f"{self.directory}/{self.model}-heat-stored.csv", "a") as file:
             file.write("{:.2f},{:.2f}\n".format(countTime/3600, heatPerKilo/1000))
 
     # Shranjena toplota med hranjenjem
-    def heatStoredStoring(self, tempList, tempInitial, insulationNodes, cp, countTime):
+    def heatStoredStoring(self, tempList, tempInitial, insulationNodes, countTime):
 
-        tempDifferenceList = []
         mappedList = self.mappingFile.radiusToLength(tempList)
 
-        for index in range(len(mappedList)):
-            for temperature in mappedList[index]:
-                tempAppend = temperature - tempInitial
-                tempDifferenceList.append(tempAppend)
+        cpList = []
+        for subList in mappedList:
+            fetchedCpList = Node(subList, self.propertiesObject).cpList()
+            for i in range(len(fetchedCpList)):
+                cpList.append(fetchedCpList[i])
+        cp = sum(cpList)/len(cpList)
 
-        heatPerKilo = cp*sum(tempDifferenceList)/len(tempDifferenceList)
+        tempDifferenceList = []
+        for subList in mappedList:
+            for temperature in subList:
+                tempDifferenceList.append(temperature - tempInitial)
+        dT = sum(tempDifferenceList)/len(tempDifferenceList)
 
-        with open(f"{self.directory}/heat-storing.csv", "a+") as file:
+        heatPerKilo = cp*dT
+
+        with open(f"{self.directory}/{self.model}-heat-stored.csv", "a") as file:
             file.write("{:.2f},{:.2f}\n".format(countTime/3600, heatPerKilo/1000))
 
         # tempDifferenceList = []

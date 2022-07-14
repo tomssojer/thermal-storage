@@ -5,45 +5,45 @@ from matrix import continuousCharging, continuousDischarging
 from matrix import storingHeat
 from exporter import Export
 from storage import Storage
-from modules.makeDirectory import makeDir
+import modules.makeDirectory
 import time
 import multiprocessing
 
-
-def prepareSimulations(model, props, exportDirectory):
+def prepareSimulations(model, props, directoryPath):
 
     props.getProperties()
     props.discretization()
     props.calculatedCoefficients()
 
     if model == "single-phase":
-        exportSinglePhase = Export(props, exportDirectory, f"{props.simulationId}-single-phase-model", mapSinglePhase)
+        exportSinglePhase = Export(props, directoryPath, "single-phase", mapSinglePhase)
         objectSinglePhase = Storage(props, mapSinglePhase, exportSinglePhase, [])
         objectSinglePhase.charge(singlePhaseCharging, props.Tfluid, exportSinglePhase)
-        objectSinglePhase.store(storingHeat, props.Tambient)
+        objectSinglePhase.store(storingHeat, props.Tambient, exportSinglePhase)
         objectSinglePhase.discharge(singlePhaseDischarging, props.Tambient)
 
     
-    elif model == "continuous":
-        exportContinuous = Export(props, exportDirectory, f"{props.simulationId}-continuous-model", mapContinuous, 2)
+    elif model == "continuous-solid":
+        exportContinuous = Export(props, directoryPath, "continuous-solid-phase", mapContinuous, 2)
         objectContinuous = Storage(props, mapContinuous, exportContinuous, [], 2)
         objectContinuous.charge(continuousCharging, props.Tfluid, exportContinuous)
-        objectContinuous.store(storingHeat, props.Tambient)
+        objectContinuous.store(storingHeat, props.Tambient, exportContinuous)
         objectContinuous.discharge(continuousDischarging, props.Tambient)
 
 if __name__ == "__main__":
 
     startTime = time.time()
 
-    exportDirectory = makeDir()
+    directoryPath = modules.makeDirectory.makeDir()
+    copyProperties = modules.makeDirectory.copyPropertiesFile(directoryPath)
     props = Properties()
-
 
     while props.simulationId:
 
-        p1 = multiprocessing.Process(target=prepareSimulations, args=("single-phase", props, exportDirectory))
+        idDirectory = props.makeDirectoryForId(directoryPath)
 
-        p2 = multiprocessing.Process(target=prepareSimulations, args=("continuous", props, exportDirectory))
+        p1 = multiprocessing.Process(target=prepareSimulations, args=("single-phase", props, idDirectory))
+        p2 = multiprocessing.Process(target=prepareSimulations, args=("continuous-solid", props, idDirectory))
 
         p1.start()
         p2.start()
