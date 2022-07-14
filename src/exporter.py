@@ -1,19 +1,3 @@
-import os
-
-def getDirectoryName(directory):
-    # Change to specified directory
-    os.chdir(directory)
-
-    dirName = input("Choose a name for the directory: ")
-    dirPath = os.path.join(directory, dirName)
-    try:
-        os.mkdir(dirPath)
-    except OSError:
-        print("Try a different one")
-        getDirectoryName(directory)
-
-    return dirPath
-
 class Export:
 
     def __init__(self, propertiesObject, directory, model, mappingFile, sizeCoefficient=1):

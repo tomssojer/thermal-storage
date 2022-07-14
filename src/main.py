@@ -1,42 +1,58 @@
-import os
-import time
-import constants
 from importer import Properties
-from storage import Storage
-from exporter import getDirectoryName, Export
 from modules import mapContinuous, mapSinglePhase
 from matrix import singlePhaseCharging, singlePhaseDischarging
 from matrix import continuousCharging, continuousDischarging
-from matrix import storing
+from matrix import storingHeat
+from exporter import Export
+from storage import Storage
+from modules.makeDirectory import makeDir
+import time
+import multiprocessing
 
-startTime = time.time()
 
-if not os.path.exists(constants.LOG_DIRECTORY_PATH):
-    os.makedirs(constants.LOG_DIRECTORY_PATH)
-exportDir = getDirectoryName(constants.LOG_DIRECTORY_PATH)
+def prepareSimulations(model, props, exportDirectory):
 
-props = Properties()
-
-while props.simulationId:
     props.getProperties()
     props.discretization()
     props.calculatedCoefficients()
 
-    exportSinglePhase = Export(props, exportDir, f"{props.simulationId}-single-phase-model", mapSinglePhase)
-    objectSinglePhase = Storage(props, mapSinglePhase, exportSinglePhase, [])
-    objectSinglePhase.charge(singlePhaseCharging, props.Tfluid, exportSinglePhase)
-    objectSinglePhase.store(storing, props.Tambient)
-    objectSinglePhase.discharge(singlePhaseDischarging, props.Tambient)
-    props.progressOfSimulations()
+    if model == "single-phase":
+        exportSinglePhase = Export(props, exportDirectory, f"{props.simulationId}-single-phase-model", mapSinglePhase)
+        objectSinglePhase = Storage(props, mapSinglePhase, exportSinglePhase, [])
+        objectSinglePhase.charge(singlePhaseCharging, props.Tfluid, exportSinglePhase)
+        objectSinglePhase.store(storingHeat, props.Tambient)
+        objectSinglePhase.discharge(singlePhaseDischarging, props.Tambient)
 
-    exportContinuous = Export(props, exportDir, f"{props.simulationId}-continuous-model", mapContinuous, 2)
-    objectContinuous = Storage(props, mapContinuous, exportContinuous, [], 2)
-    objectContinuous.charge(continuousCharging, props.Tfluid, exportContinuous)
-    objectContinuous.store(storing, props.Tambient)
-    objectContinuous.discharge(continuousDischarging, props.Tambient)
-    props.progressOfSimulations()
+    
+    elif model == "continuous":
+        exportContinuous = Export(props, exportDirectory, f"{props.simulationId}-continuous-model", mapContinuous, 2)
+        objectContinuous = Storage(props, mapContinuous, exportContinuous, [], 2)
+        objectContinuous.charge(continuousCharging, props.Tfluid, exportContinuous)
+        objectContinuous.store(storingHeat, props.Tambient)
+        objectContinuous.discharge(continuousDischarging, props.Tambient)
 
-    props.getNextId()
+if __name__ == "__main__":
 
-endTime = time.time()
-props.simulationTime(startTime, endTime)
+    startTime = time.time()
+
+    exportDirectory = makeDir()
+    props = Properties()
+
+
+    while props.simulationId:
+
+        p1 = multiprocessing.Process(target=prepareSimulations, args=("single-phase", props, exportDirectory))
+
+        p2 = multiprocessing.Process(target=prepareSimulations, args=("continuous", props, exportDirectory))
+
+        p1.start()
+        p2.start()
+        p1.join()
+        props.progressOfSimulations()
+        p2.join()
+        props.progressOfSimulations()
+
+        props.getNextId()
+
+    endTime = time.time()
+    props.simulationTime(startTime, endTime)

@@ -1,20 +1,17 @@
-import constants
+import modules.makeDirectory as makeDirectory
 
 # Extract data from materials files and return a list of lists
 def getListFromImportedFile(material, property):
-    try:
-        path = f"{constants.ROOT_DIRECTORY}/data/{material}/{property}.csv"
-        with open(path, "r", encoding='utf-8-sig') as openedFile:
-            lines = openedFile.readlines()
-            values = []
-            for line in lines:
-                line = line.strip("\n")
-                valuesArray = line.split(",")
-                valuesArray[0] = float(valuesArray[0])
-                valuesArray[1] = float(valuesArray[1])
-                values.append(valuesArray)
-    except:
-        raise Exception("Incorrectly defined material or property in getListsFromFiles.")
+    path = f"{makeDirectory.ROOT_DIRECTORY}/data/{material}/{property}.csv"
+    with open(path, "r", encoding='utf-8-sig') as openedFile:
+        lines = openedFile.readlines()
+        values = []
+        for line in lines:
+            line = line.strip("\n")
+            valuesArray = line.split(",")
+            valuesArray[0] = float(valuesArray[0])
+            valuesArray[1] = float(valuesArray[1])
+            values.append(valuesArray)
 
     return values
 
