@@ -1,9 +1,10 @@
 from pathlib import Path
 import os
+import shutil
 
-ROOT_DIRECTORY = Path(__file__).parent.parent.parent.absolute()
+ROOT_DIRECTORY_PATH = Path(__file__).parent.parent.parent.absolute()
 LOG_DIRECTORY = "logs"
-LOG_DIRECTORY_PATH = os.path.join(ROOT_DIRECTORY, LOG_DIRECTORY)
+LOG_DIRECTORY_PATH = os.path.join(ROOT_DIRECTORY_PATH, LOG_DIRECTORY)
 
 def getDirectoryName(directory):
     # Change to specified directory
@@ -24,3 +25,7 @@ def makeDir():
     if not os.path.exists(LOG_DIRECTORY_PATH):
         os.makedirs(LOG_DIRECTORY_PATH)
     return getDirectoryName(LOG_DIRECTORY_PATH)
+
+def copyPropertiesFile(destination):
+    source = f"{ROOT_DIRECTORY_PATH}/data/properties.csv"
+    shutil.copy2(source, destination)

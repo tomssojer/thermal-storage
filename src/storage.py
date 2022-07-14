@@ -40,6 +40,7 @@ class Storage:
     def charge(self, arrayFile, outerTemperature, exportObj):
         self.temperatureList = init.temperatures(self.propsObj.zNodes, self.propsObj.rNodes, self.propsObj.Tambient, self.sizeOfMatrixCoeff)
         exportObj.initialTemperatures(self.temperatureList)
+        exportObj.openFileForHeatStored("Charging process")
 
         difference = abs(outerTemperature - self.temperatureList[0][-1])
         initialCount = self.endCount()
@@ -49,15 +50,16 @@ class Storage:
             countTime = self.time(self.propsObj.dt)
 
             if (countTime - initialCount) % self.propsObj.exportDtCharging == 0:
-                self.exportFile.allTemperatures("Charging", self.temperatureList, countTime)
-                # self.exportFile.heatStored(currentTempList, Tambient, cp, countTime)
+                self.exportFile.allTemperatures("Charging process", self.temperatureList, countTime)
+                self.exportFile.heatStored(self.temperatureList, self.propsObj.Tambient, countTime)
 
             difference = abs(outerTemperature - self.temperatureList[0][-1])
 
 
-    def store(self, arrayFile, outerTemperature):
+    def store(self, arrayFile, outerTemperature, exportObj):
         self.temperatureList = self.mappingFile.lengthToRadius(self.temperatureList)
         self.temperatureList = init.makeInsulation(self.temperatureList, self.propsObj.Tambient, self.propsObj.rNodesIns)
+        exportObj.openFileForHeatStored("Storing process")
 
         difference = abs(outerTemperature - self.temperatureList[-1][0])
         initialCount = self.endCount()
@@ -69,7 +71,7 @@ class Storage:
 
             if (countTime - initialCount) % self.propsObj.exportDtStoring == 0:
                 self.exportFile.allStoringTemperatures(self.temperatureList, self.propsObj.rNodesIns, countTime)
-                # self.exportFile.heatStoredStoring(currentTempList, Tambient, rNodesIns, cp, countTime)
+                self.exportFile.heatStoredStoring(self.temperatureList, self.propsObj.Tambient, self.propsObj.rNodesIns, countTime)
 
             difference = abs(outerTemperature - self.temperatureList[-1][0])
         
@@ -86,6 +88,6 @@ class Storage:
             countTime = self.time(self.propsObj.dt)
 
             if (countTime - initialCount) % self.propsObj.exportDtCharging == 0:
-                self.exportFile.allTemperatures("Discharging", self.temperatureList, countTime)
+                self.exportFile.allTemperatures("Discharging process", self.temperatureList, countTime)
 
             difference = abs(outerTemperature - self.temperatureList[-1][0])

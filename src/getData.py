@@ -2,7 +2,7 @@ import modules.makeDirectory as makeDirectory
 
 # Extract data from materials files and return a list of lists
 def getListFromImportedFile(material, property):
-    path = f"{makeDirectory.ROOT_DIRECTORY}/data/{material}/{property}.csv"
+    path = f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/{material}/{property}.csv"
     with open(path, "r", encoding='utf-8-sig') as openedFile:
         lines = openedFile.readlines()
         values = []
@@ -111,3 +111,9 @@ class Node():
         for i in range(len(self.subList)):
             thermalMassList.append(self.props.voidFrac*self.rhoGasList()[i]*self.cGasList()[i] + (1 - self.props.voidFrac)*self.rhoStorageList()[i]*self.cStorageList()[i])
         return thermalMassList
+
+    def cpList(self):
+        cpList = []
+        for i in range(len(self.subList)):
+            cpList.append(self.props.voidFrac*self.cGasList()[i] + (1 - self.props.voidFrac)*self.cStorageList()[i])
+        return cpList

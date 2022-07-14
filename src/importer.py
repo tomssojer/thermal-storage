@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import csv
 import modules.makeDirectory as makeDirectory
 
@@ -9,7 +9,7 @@ class Properties:
         self.simulationCount = simulationCount
     
     def getNextId(self):
-        with open(f"{makeDirectory.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+        with open(f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.DictReader(csvFile)
 
             # Do this until row doesn't return anything, check the next row if it exists
@@ -21,13 +21,19 @@ class Properties:
         self.simulationId = None
 
     def progressOfSimulations(self):
-        with open(f"{makeDirectory.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+        with open(f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.reader(csvFile)
             allSimulations = 2*(sum(1 for _ in allRows) - 1)
 
             print(f"{self.simulationCount}/{allSimulations} done")
             self.simulationCount += 1
             return self.simulationCount
+
+    def makeDirectoryForId(self, exportDirectory):
+        idDirectoryPath = f"{exportDirectory}/id-{self.simulationId}"
+        os.makedirs(idDirectoryPath)
+
+        return idDirectoryPath
 
     def simulationTime(self, startTime, endTime):
         difference = endTime - startTime
@@ -39,7 +45,7 @@ class Properties:
             print(f"Done in {round(difference/3600, 1)} h")
 
     def getProperties(self):
-        with open(f"{makeDirectory.ROOT_DIRECTORY}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
+        with open(f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.DictReader(csvFile)
 
             for row in allRows:
