@@ -20,14 +20,16 @@ class Properties:
 
         self.simulationId = None
 
-    def progressOfSimulations(self):
+    def getNumberOfSimulations(self):
         with open(f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.reader(csvFile)
-            allSimulations = 2*(sum(1 for _ in allRows) - 1)
+            self.getNumberOfSimulations = sum(1 for _ in allRows) - 1
+            return self.getNumberOfSimulations
 
-            print(f"{self.simulationCount}/{allSimulations} done")
-            self.simulationCount += 1
-            return self.simulationCount
+    def progressOfSimulations(self):
+        print(f"{self.simulationCount}/{2*self.getNumberOfSimulations} done")
+        self.simulationCount += 1
+        return self.simulationCount
 
     def makeDirectoryForId(self, exportDirectory):
         idDirectoryPath = f"{exportDirectory}/id-{self.simulationId}"
@@ -59,8 +61,6 @@ class Properties:
                         self.kIns = float(row["kIns"])
                         self.rhoIns = float(row["rhoIns"])
                         self.cIns = float(row["cIns"])
-                        self.kf = float(row["kf"])
-                        self.ks = float(row["ks"])
                         self.Tambient = float(row["Tambient"])
                         self.Tfluid = float(row["Tfluid"])
                         self.finalDifference = float(row["finalDifference"])
@@ -78,7 +78,7 @@ class Properties:
                         self.exportDtCharging = float(row["exportDtCharging"])
                         self.exportDtStoring = float(row["exportDtStoring"])
 
-                    except (TypeError, ValueError):
+                    except KeyError:
                         print("Not all properties are defined")
                         sys.exit()
 
@@ -102,6 +102,3 @@ class Properties:
             except ZeroDivisionError:
                 print("Redefine insulation or drDefined")
                 sys.exit()
-
-    def calculatedCoefficients(self):
-        self.A = 6*(1 - self.voidFrac)/self.materialDiameter
