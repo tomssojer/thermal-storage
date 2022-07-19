@@ -1,3 +1,4 @@
+from math import log10
 import modules.makeDirectory as makeDirectory
 
 # Extract data from materials files and return a list of lists
@@ -96,16 +97,6 @@ class Node():
     def cStorageList(self):
         return searchForProperty(self.subList, self.cStorage)
 
-    def kList(self):
-        reynoldsNum = []; prandtlNum = []; effConductivity = []; kList = []
-        for i in range(len(self.subList)):
-            reynoldsNum.append(self.rhoGasList()[i]*self.props.flowVelocity*self.props.materialDiameter/self.props.dynamicViscosity)
-            prandtlNum.append(self.cGasList()[i]*self.props.dynamicViscosity/self.kGasList()[i])
-            effConductivity.append(self.kGasList()[i]*self.props.voidFrac*(1 + self.props.c1*(reynoldsNum[i]*prandtlNum[i])**self.props.c2))
-            kList.append(self.kStorageList()[i]*(1 - self.props.voidFrac*(self.kStorageList()[i] - effConductivity[i])/(effConductivity[i] + self.props.voidFrac**(1/3)*(self.kStorageList()[i] - effConductivity[i]))))
-
-        return kList
-
     def thermalMassList(self):
         thermalMassList = []
         for i in range(len(self.subList)):
@@ -117,3 +108,47 @@ class Node():
         for i in range(len(self.subList)):
             cpList.append(self.props.voidFrac*self.cGasList()[i] + (1 - self.props.voidFrac)*self.cStorageList()[i])
         return cpList
+
+    def reynoldsNumList(self):
+        reynoldsNum = []
+        for i in range(len(self.subList)):
+            reynoldsNum.append(self.rhoGasList()[i]*self.props.flowVelocity*self.props.materialDiameter/self.props.dynamicViscosity)
+        return reynoldsNum
+
+    def prandtlNumList(self):
+        prandtlNum = []
+        for i in range(len(self.subList)):
+            prandtlNum.append(self.cGasList()[i]*self.props.dynamicViscosity/self.kGasList()[i])
+        return prandtlNum
+
+    def kStoringList(self):
+        kList = []
+        for i in range(len(self.subList)):
+            kList.append(self.props.voidFrac*self.kGasList()[i] + (1 - self.props.voidFrac)*self.kStorageList()[i])
+        return kList
+
+    def kSinglePhaseList(self):
+        kEff = []; kList = []
+        for i in range(len(self.subList)):
+            kEff.append(self.kGasList()[i]*self.props.voidFrac*(1 + self.props.c1*(self.reynoldsNumList()[i]*self.prandtlNumList()[i])**self.props.c2))
+            kList.append(self.kStorageList()[i]*(1 - self.props.voidFrac*(self.kStorageList()[i] - kEff[i])/(kEff[i] + self.props.voidFrac**(1/3)*(self.kStorageList()[i] - kEff[i]))))
+        return kList
+
+    def kContinuousFluidList(self):
+        kList = []
+        for i in range(len(self.subList)):
+            if self.reynoldsNumList()[i] <= 0.8:
+                kList.append(0.7*self.props.voidFrac*self.kGasList()[i])
+            else:
+                kList.append(0.5*self.prandtlNumList()[i]*self.reynoldsNumList()[i]*self.kGasList()[i])
+        return kList
+
+    def kContinuousSolidList(self):
+        kList = []; kEff = []; kStagnation = []; m = []
+        for i in range(len(self.subList)):
+            m.append(0.28 - 0.757*log10(self.props.voidFrac) - 0.057*log10(self.kStorageList()[i]/self.kGasList()[i]))
+            kStagnation.append(self.kGasList()[i]*(self.kStorageList()[i]/self.kGasList()[i])**m[i])
+            kEff.append(kStagnation[i] + self.kGasList()[i]*0.5*self.prandtlNumList()[i]*self.reynoldsNumList()[i])
+            kList.append(kEff[i] - self.kGasList()[i])
+        return kList
+

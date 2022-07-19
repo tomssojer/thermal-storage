@@ -11,7 +11,7 @@ class GetArrays:
 
     def coeffMatrix(self, props):
         coefficients = init.prepareStoring(props.rNodes, props.rNodesIns)[0]
-        k = Node(self.subList, props).kList()
+        k = Node(self.subList, props).kStoringList()
         thermalMass = Node(self.subList, props).thermalMassList()
 
         # Coefficients at the inner boundary

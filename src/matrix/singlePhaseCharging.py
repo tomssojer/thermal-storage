@@ -12,7 +12,7 @@ class GetArrays:
     # Matrix of coefficients
     def coeffMatrix(self, props):
         coefficients = init.prepareCharging(props.zNodes, self.sizeOfMatrixCoeff)[0]
-        k = Node(self.subList, props).kList()
+        k = Node(self.subList, props).kSinglePhaseList()
         thermalMass = Node(self.subList, props).thermalMassList()
         cGas = Node(self.subList, props).cGasList()
 
