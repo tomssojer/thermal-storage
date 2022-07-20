@@ -23,4 +23,5 @@ docker run -it -v ${PWD}:/thermal-storage IMAGE_NAME bash
 ```
 `cd thermal-storage` to get into the directory in the container and run the main file with `python src/main.py`.
 
-
+## Changing properties
+You can change properties of the storage in data/properties.csv. Currently, there are 3 simulations defined that are run, and new can be added by defining new rows.
