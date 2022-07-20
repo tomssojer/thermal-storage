@@ -149,6 +149,5 @@ class Node():
             m.append(0.28 - 0.757*log10(self.props.voidFrac) - 0.057*log10(self.kStorageList()[i]/self.kGasList()[i]))
             kStagnation.append(self.kGasList()[i]*(self.kStorageList()[i]/self.kGasList()[i])**m[i])
             kEff.append(kStagnation[i] + self.kGasList()[i]*0.5*self.prandtlNumList()[i]*self.reynoldsNumList()[i])
-            kList.append(kEff[i] - self.kGasList()[i])
+            kList.append(kEff[i] - 0.5*self.prandtlNumList()[i]*self.reynoldsNumList()[i]*self.kGasList()[i])
         return kList
-

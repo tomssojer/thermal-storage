@@ -12,7 +12,7 @@ class GetArrays:
     def coeffMatrix(self, props):
         coefficients = init.prepareCharging(props.zNodes, self.sizeOfMatrixCoeff)[0]
         kSolid = Node(self.subList, props).kContinuousSolidList()
-        kFluid = Node(self.subList, props).kContinuousSolidList()
+        kFluid = Node(self.subList, props).kContinuousFluidList()
         rhoStorage = Node(self.subList, props).rhoStorageList()
         cStorage = Node(self.subList, props).cStorageList()
         rhoGas = Node(self.subList, props).rhoGasList()
@@ -60,7 +60,7 @@ class GetArrays:
 
     def constArray(self, props, temperatureList):
         constants = init.prepareCharging(props.zNodes, self.sizeOfMatrixCoeff)[1]
-        kFluid = Node(self.subList, props).kContinuousSolidList()
+        kFluid = Node(self.subList, props).kContinuousFluidList()
         rhoStorage = Node(self.subList, props).rhoStorageList()
         cStorage = Node(self.subList, props).cStorageList()
         rhoGas = Node(self.subList, props).rhoGasList()
