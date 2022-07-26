@@ -27,7 +27,7 @@ class Properties:
             return self.getNumberOfSimulations
 
     def progressOfSimulations(self):
-        print(f"{self.simulationCount}/{2*self.getNumberOfSimulations()} done")
+        print(f"{self.simulationCount}/{2*self.getNumberOfSimulations} done")
         self.simulationCount += 1
         return self.simulationCount
 
