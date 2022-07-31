@@ -42,19 +42,19 @@ class GetArrays:
         # Fluid - 1. robni pogoj
         coefficients[halfArray][0] = 2*props.h*A*props.dt*props.dz**2
         coefficients[halfArray][halfArray] = 2*props.voidFrac*rhoGas[halfArray]*cGas[halfArray]*props.dz**2 + 4*kFluid[halfArray]*props.dt - 2*props.h*A*props.dt*props.dz**2
-        coefficients[halfArray][halfArray+1] = props.voidFrac*rhoGas[halfArray+1]*cGas[halfArray+1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[halfArray+1]*props.dt
+        coefficients[halfArray][halfArray+1] = -props.voidFrac*rhoGas[halfArray+1]*cGas[halfArray+1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[halfArray+1]*props.dt
 
         # Fluid - vmesne enačbe
         for i in range(halfArray+1, wholeArray-1):
             coefficients[i][i-halfArray] = 2*props.h*A*props.dt*props.dz**2
-            coefficients[i][i-1] = -props.voidFrac*rhoGas[i-1]*cGas[i-1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[i-1]*props.dt
+            coefficients[i][i-1] = props.voidFrac*rhoGas[i-1]*cGas[i-1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[i-1]*props.dt
             coefficients[i][i] = 2*props.voidFrac*rhoGas[i]*cGas[i]*props.dz**2 + 4*kFluid[i]*props.dt - 2*props.h*A*props.dt*props.dz**2
-            coefficients[i][i+1] = props.voidFrac*rhoGas[i+1]*cGas[i+1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[i+1]*props.dt
+            coefficients[i][i+1] = -props.voidFrac*rhoGas[i+1]*cGas[i+1]*props.flowVelocity*props.dt*props.dz - 2*kFluid[i+1]*props.dt
 
         # Fluid - 2. robni pogoj
         coefficients[wholeArray-1][halfArray-1] = props.h*A*props.dt*props.dz**2
-        coefficients[wholeArray-1][wholeArray-2] = -props.voidFrac*rhoGas[wholeArray-2]*cGas[wholeArray-2]*props.flowVelocity*props.dt*props.dz - kFluid[wholeArray-2]*props.dt
-        coefficients[wholeArray-1][wholeArray-1] = props.voidFrac*rhoGas[wholeArray-1]*cGas[wholeArray-1]*props.dz**2 + props.voidFrac*rhoGas[wholeArray-1]*cGas[wholeArray-1]*props.flowVelocity*props.dt*props.dz + kFluid[wholeArray-1]*props.dt - props.h*A*props.dt*props.dz**2
+        coefficients[wholeArray-1][wholeArray-2] = props.voidFrac*rhoGas[wholeArray-2]*cGas[wholeArray-2]*props.flowVelocity*props.dt*props.dz - kFluid[wholeArray-2]*props.dt
+        coefficients[wholeArray-1][wholeArray-1] = props.voidFrac*rhoGas[wholeArray-1]*cGas[wholeArray-1]*props.dz**2 - props.voidFrac*rhoGas[wholeArray-1]*cGas[wholeArray-1]*props.flowVelocity*props.dt*props.dz + kFluid[wholeArray-1]*props.dt - props.h*A*props.dt*props.dz**2
 
         return coefficients
 
@@ -74,7 +74,7 @@ class GetArrays:
             constants[i] = (1-props.voidFrac)*rhoStorage[i]*cStorage[i]*props.dz**2*temperatureList[i]
 
         # Fluid - 1. robni pogoj
-        constants[halfArray] = (props.voidFrac*rhoGas[halfArray]*cGas[halfArray]*props.flowVelocity*props.dt*props.dz + 2*kFluid[halfArray]*props.dt)*props.Tambient + 2*props.voidFrac*rhoGas[halfArray]*cGas[halfArray]*props.dz**2*temperatureList[halfArray]
+        constants[halfArray] = (-props.voidFrac*rhoGas[halfArray]*cGas[halfArray]*props.flowVelocity*props.dt*props.dz + 2*kFluid[halfArray]*props.dt)*props.Tambient + 2*props.voidFrac*rhoGas[halfArray]*cGas[halfArray]*props.dz**2*temperatureList[halfArray]
 
         # Fluid - vmesne enačbe
         for i in range(halfArray+1, wholeArray-1):
