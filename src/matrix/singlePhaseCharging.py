@@ -17,16 +17,16 @@ class GetArrays:
         cGas = Node(self.subList, props).cGasList()
 
         # Coefficients at the boundaries
-        coefficients[0][0] = 2*k[0]*props.dt + 2*props.h*props.dz*props.dt + thermalMass[0]*(props.dz**2)
-        coefficients[0][1] = -2*k[1]*props.dt + props.G*cGas[1]*props.dz*props.dt
-        coefficients[-1][-2] = -2*k[-2]*props.dt - props.G*cGas[-2]*props.dz*props.dt
-        coefficients[-1][-1] = 2*k[-1]*props.dt + thermalMass[-1]*(props.dz**2) + props.G*cGas[-1]*props.dz*props.dt
+        coefficients[0][0] = 4*k[0]*k[1]/(k[0]+k[1])*props.dt + 2*props.h*props.dz*props.dt + thermalMass[0]*(props.dz**2)
+        coefficients[0][1] = -4*k[0]*k[1]/(k[0]+k[1])*props.dt + props.G*cGas[1]*props.dz*props.dt
+        coefficients[-1][-2] = -4*k[-2]*k[-1]/(k[-2]+k[-1])*props.dt - props.G*cGas[-2]*props.dz*props.dt
+        coefficients[-1][-1] = 4*k[-2]*k[-1]/(k[-2]+k[-1])*props.dt + thermalMass[-1]*(props.dz**2) + props.G*cGas[-1]*props.dz*props.dt
 
         # Coefficients in the storage
         for i in range(1, len(coefficients) - 1):
-            coefficients[i][i-1] = -2*k[i-1]*props.dt - props.G*cGas[i-1]*props.dz*props.dt
-            coefficients[i][i] = 4*k[i]*props.dt + 2*thermalMass[i]*(props.dz**2)
-            coefficients[i][i+1] = -2*k[i+1]*props.dt + props.G*cGas[i+1]*props.dz*props.dt
+            coefficients[i][i-1] = -4*k[i-1]*k[i]/(k[i-1]+k[i])*props.dt - props.G*cGas[i-1]*props.dz*props.dt
+            coefficients[i][i] = 4*(k[i-1]*k[i]/(k[i-1]+k[i]) + k[i+1]*k[i]/(k[i+1]+k[i]))*props.dt + 2*thermalMass[i]*(props.dz**2)
+            coefficients[i][i+1] = -4*k[i+1]*k[i]/(k[i+1]+k[i])*props.dt + props.G*cGas[i+1]*props.dz*props.dt
 
         return coefficients
 

@@ -23,11 +23,11 @@ class Properties:
     def getNumberOfSimulations(self):
         with open(f"{makeDirectory.ROOT_DIRECTORY_PATH}/data/properties.csv", "r", encoding="utf-8-sig") as csvFile:
             allRows = csv.reader(csvFile)
-            self.getNumberOfSimulations = sum(1 for _ in allRows) - 1
-            return self.getNumberOfSimulations
+            self.numberOfSimulations = sum(1 for _ in allRows) - 1
+            return self.numberOfSimulations
 
     def progressOfSimulations(self):
-        print(f"{self.simulationCount}/{2*self.getNumberOfSimulations} done")
+        print(f"{self.simulationCount}/{2*self.getNumberOfSimulations()} done")
         self.simulationCount += 1
         return self.simulationCount
 

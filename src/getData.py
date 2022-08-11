@@ -1,4 +1,4 @@
-from math import log10
+from math import log
 import modules.makeDirectory as makeDirectory
 
 # Extract data from materials files and return a list of lists
@@ -146,7 +146,7 @@ class Node():
     def kContinuousSolidList(self):
         kList = []; kEff = []; kStagnation = []; m = []
         for i in range(len(self.subList)):
-            m.append(0.28 - 0.757*log10(self.props.voidFrac) - 0.057*log10(self.kStorageList()[i]/self.kGasList()[i]))
+            m.append(0.28 - 0.757*log(self.props.voidFrac) - 0.057*log(self.kStorageList()[i]/self.kGasList()[i]))
             kStagnation.append(self.kGasList()[i]*(self.kStorageList()[i]/self.kGasList()[i])**m[i])
             kEff.append(kStagnation[i] + self.kGasList()[i]*0.5*self.prandtlNumList()[i]*self.reynoldsNumList()[i])
             kList.append(kEff[i] - self.kContinuousFluidList()[i])

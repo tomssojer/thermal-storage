@@ -15,15 +15,21 @@ class GetArrays:
         thermalMass = Node(self.subList, props).thermalMassList()
 
         # Coefficients at the inner boundary
-        coefficients[0][0] = 4*k[0]*props.dtStore + thermalMass[0]*(props.dr**2)
-        coefficients[0][1] = -4*k[1]*props.dtStore
+        coefficients[0][0] = 8*k[0]*k[1]/(k[0]+k[1])*props.dtStore + thermalMass[0]*(props.dr**2)
+        coefficients[0][1] = -8*k[0]*k[1]/(k[0]+k[1])*props.dtStore
 
         # Coefficients in the storage
         for j in range(1, props.rNodes - 1):
-            coefficients[j][j-1] = -k[j-1]*props.dtStore - 2*k[j-1]*props.dtStore*j
-            coefficients[j][j] = 4*k[j]*props.dtStore*j + 2*thermalMass[j]*(props.dr**2)*j
-            coefficients[j][j+1] = k[j+1]*props.dtStore - 2*k[j+1]*props.dtStore*j
+            kMiddle = 4*k[j-1]*k[j]*k[j-1]/(k[j]*k[j+1] + 2*k[j-1]*k[j+1] + k[j-1]*k[j])
+            kRight = 2*k[j]*k[j+1]/(k[j] + k[j+1])
+            kLeft = 2*k[j]*k[j-1]/(k[j] + k[j-1])
+            coefficients[j][j-1] = -kMiddle*props.dtStore - 2*kLeft*props.dtStore*j
+            coefficients[j][j] = 2*(kRight+kLeft)*props.dtStore*j + 2*thermalMass[j]*(props.dr**2)*j
+            coefficients[j][j+1] = kMiddle*props.dtStore - 2*kRight*props.dtStore*j
 
+        # Na telem delu moramo še dodati pravilne enačbe
+        #
+        #
         if props.drIns > 0:
             # Coefficients at the storage/insulation boundary
             # K = (props.rNodes - 3/2)*thermalMass + (props.rNodes - 1/2)*props.rhoIns*props.cIns
@@ -49,8 +55,8 @@ class GetArrays:
         elif props.drIns == 0:
             K2 = props.rNodes-1
             K3 = 2*props.hAmbient*props.dr*props.dtStore
-            coefficients[-1][-2] = -2*k[-2]*props.dtStore*K2
-            coefficients[-1][-1] = K3 + 2*k[-1]*props.dtStore*K2 + K3*K2 + thermalMass[-1]*(props.dr**2)*K2
+            coefficients[-1][-2] = -4*k[-2]*k[-1]/(k[-2]+k[-1])*props.dtStore*K2
+            coefficients[-1][-1] = K3 + 4*k[-2]*k[-1]/(k[-2]+k[-1])*props.dtStore*K2 + K3*K2 + thermalMass[-1]*(props.dr**2)*K2
 
         return coefficients
 
